@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: backend
+  datasource:
+    url: >-
+      jdbc:mysql://${MYSQL_ADDRESS:localhost:3306}/wannengbangbang
+      ?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+    username: ${MYSQL_USERNAME:root}
+    password: ${MYSQL_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    open-in-view: false

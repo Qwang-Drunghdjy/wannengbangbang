@@ -1,0 +1,5 @@
+# 自动检测文本文件，统一使用 LF（仓库内），Windows 检出时转为 CRLF
+* text=auto
+
+# 特别指定 .md 文件强制使用 LF（防止警告）
+*.md text eol=lf
