@@ -4,7 +4,10 @@
 
 "万能帮帮"是一个基于 **Spring Boot 3** 的失物招领 Web 应用。用户可以发布两类信息：**捡到的物品**（等待失主认领）和**丢失的物品**（寻物启事）。两张表字段一一对应，"丢失的物品" 的 "图片"字段为可选。
 
+系统提供 **智能匹配** 功能：对每条寻物启事，基于中文分词（HanLP）和 Jaccard 相似度，从失物库中自动推荐最相似的 3 条，帮助用户快速定位可能匹配的物品。
+
 - **后端**: Java 17, Spring Boot 3, Spring Data JPA, MySQL 8, Maven
+- **分词**: HanLP portable-1.8.4（中文 NLP 工具包）
 - **部署**: 微信云托管
 - **前端**: Vue.js（移动端优先，运行在手机浏览器）
 
@@ -94,6 +97,67 @@ backend/
 | `POST` | `/api/v1/find-items` | 发布丢失物品的寻物启事 |
 | `GET` | `/api/v1/find-items` | 分页查询，`?title=` 模糊搜索 |
 | `GET` | `/api/v1/find-items/{id}` | 查询单条详情 |
+
+### 智能匹配接口 — `/api/v1/find-items/{id}/matches`
+
+| 方法 | 路径 | 说明 |
+| ------ | ------ | ------ |
+| `GET` | `/api/v1/find-items/{id}/matches?limit=3` | 对指定寻物启事，返回相似度最高的 N 条失物 |
+
+响应格式：
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": [
+    { "lostItem": { ... }, "score": 0.72 },
+    { "lostItem": { ... }, "score": 0.58 },
+    { "lostItem": { ... }, "score": 0.41 }
+  ]
+}
+```
+
+## 🔍 智能匹配算法
+
+### 核心思路
+
+对一条寻物启事（FindItem），遍历所有失物（LostItem），计算每对文本的加权 Jaccard 相似度，取 Top-N。
+
+### 分词
+
+使用 **HanLP portable-1.8.4**（`com.hankcs:hanlp:portable-1.8.4`）对中文字段进行分词，得到词集合。
+
+> 选择 portable 版的原因：免下载模型文件，jar 包自带词典，适合云托管环境。
+
+### 相似度公式
+
+```
+Jaccard(A, B) = |A ∩ B| / |A ∪ B|
+score = 0.6 × Jaccard(title) + 0.3 × Jaccard(description) + 0.1 × Jaccard(location)
+```
+
+| 字段 | 权重 | 说明 |
+| ------ | ------ | ------ |
+| title | 0.6 | 名称是匹配的核心 |
+| description | 0.3 | 描述提供补充信息 |
+| location | 0.1 | 地点相近也有参考价值 |
+
+### 空字段处理
+
+若某个字段在 FindItem 或 LostItem 中为 null / 空字符串，该字段的 Jaccard 相似度记为 **0**（不参与加权，但也不影响其他字段的计算）。
+
+### Service 方法粒度
+
+为方便后续加缓存注解（如 `@Cacheable`），`MatchingService` 方法拆分如下：
+
+| 方法 | 职责 |
+| ------ | ------ |
+| `tokenize(String text)` | HanLP 分词，返回 `Set<String>` |
+| `jaccard(Set<String> a, Set<String> b)` | 计算两个词集合的 Jaccard 相似度 |
+| `fieldSimilarity(String a, String b)` | 单字段相似度（封装空值检查 + 分词 + Jaccard） |
+| `calculateScore(FindItem, LostItem)` | 加权总分 |
+| `findMatches(Long findItemId, int limit)` | 入口：验证寻物存在 → 加载全量失物 → 逐一打分排序 → 返回 Top-N |
 
 ## ⚙️ 编码与协作规范
 
