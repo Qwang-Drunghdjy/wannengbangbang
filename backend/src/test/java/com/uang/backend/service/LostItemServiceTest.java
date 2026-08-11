@@ -49,6 +49,7 @@ class LostItemServiceTest {
         LostItem input = new LostItem();
         input.setId(999L);
         input.setTitle("测试物品");
+        input.setImageUrl("https://example.com/test.jpg");
 
         when(repository.save(any(LostItem.class))).thenReturn(sampleItem);
 

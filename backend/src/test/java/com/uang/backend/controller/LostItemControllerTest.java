@@ -48,7 +48,8 @@ class LostItemControllerTest {
                     "title": "黑色钱包",
                     "description": "在图书馆门口捡到",
                     "location": "图书馆",
-                    "contact": "13800001111"
+                    "contact": "13800001111",
+                    "image_url": "https://example.com/img.jpg"
                 }
                 """;
 

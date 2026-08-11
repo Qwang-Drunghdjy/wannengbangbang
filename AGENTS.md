@@ -2,7 +2,7 @@
 
 ## 🎯 项目概述
 
-"万能帮帮"是一个基于 **Spring Boot 3** 的失物招领 Web 应用。用户可以发布两类信息：**捡到的物品**（等待失主认领）和**丢失的物品**（寻物启事）。两张表字段一一对应，"图片"字段均为可选。
+"万能帮帮"是一个基于 **Spring Boot 3** 的失物招领 Web 应用。用户可以发布两类信息：**捡到的物品**（等待失主认领）和**丢失的物品**（寻物启事）。两张表字段一一对应，"丢失的物品" 的 "图片"字段为可选。
 
 - **后端**: Java 17, Spring Boot 3, Spring Data JPA, MySQL 8, Maven
 - **部署**: 微信云托管
@@ -56,7 +56,7 @@ backend/
 | `description` | `TEXT` | ❌ | 物品描述 |
 | `location` | `String(200)` | ❌ | 拾获地点 |
 | `contact` | `String(100)` | ❌ | 联系方式 |
-| `image_url` | `String(500)` | ❌ | 图片 URL（可选） |
+| `image_url` | `String(500)` | ✅ | 图片 URL |
 | `create_time` | `LocalDateTime` | — | 发布时间（服务端赋值） |
 
 ### 寻物表 (`find_item`) — 丢失的物品
