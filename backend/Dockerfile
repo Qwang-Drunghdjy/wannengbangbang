@@ -1,7 +1,8 @@
 # ============ 构建阶段 ============
 # 国内构建若拉取缓慢，可将基础镜像替换为腾讯云内网加速地址，如：
 # mirror.ccs.tencentyun.com/library/maven:3.9-eclipse-temurin-17
-FROM maven:3.9-eclipse-temurin-17 AS build
+# FROM maven:3.9-eclipse-temurin-17 AS build
+FROM mirror.ccs.tencentyun.com/library/maven:3.9-eclipse-temurin-17 AS build
 WORKDIR /app
 
 # 阿里云 Maven 镜像加速（Q4：如无需加速可删除此段）
@@ -23,7 +24,8 @@ COPY src ./src
 RUN mvn -B clean package -DskipTests
 
 # ============ 运行阶段 ============
-FROM eclipse-temurin:17-jre-alpine AS runtime
+# FROM eclipse-temurin:17-jre-alpine AS runtime
+FROM mirror.ccs.tencentyun.com/library/eclipse-temurin:17-jre-alpine AS runtime
 WORKDIR /app
 
 # 时区：东八区
