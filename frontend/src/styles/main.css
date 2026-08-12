@@ -1,0 +1,35 @@
+@import 'tailwindcss';
+
+/* 规范 1.1 配色 → Tailwind v4 主题色 */
+@theme {
+  --color-primary: #2563eb;
+  --color-bg: #f8fafc;
+  --color-ink: #1e293b;
+  --color-muted: #64748b;
+  --color-success: #10b981;
+  --color-danger: #ef4444;
+  --color-line: #e2e8f0;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+}
+
+body {
+  @apply bg-bg text-ink;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 移动端优先：桌面端居中且最大宽度 480px（规范 8.2） */
+#app {
+  max-width: 480px;
+  min-height: 100%;
+  margin-inline: auto;
+  background-color: var(--color-bg);
+}

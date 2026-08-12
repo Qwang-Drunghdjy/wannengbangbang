@@ -1,0 +1,83 @@
+<script setup lang="ts">
+import { onMounted, ref } from 'vue'
+import { fetchLostItems } from '@/api/items'
+import type { PublishItem } from '@/api/types'
+import CabinetDialog from '@/components/CabinetDialog.vue'
+import { relativeTime } from '@/utils/time'
+
+const items = ref<PublishItem[]>([])
+const loading = ref(false)
+const error = ref('')
+const cabinetOpen = ref(false)
+
+onMounted(async () => {
+  loading.value = true
+  try {
+    const page = await fetchLostItems({ page: 0, size: 3 })
+    items.value = page.content
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : '加载失败'
+  } finally {
+    loading.value = false
+  }
+})
+</script>
+
+<template>
+  <div class="p-4">
+    <div class="flex items-center justify-between">
+      <h1 class="text-xl font-bold">万能帮帮</h1>
+      <span class="text-sm text-muted">📍 南京审计大学</span>
+    </div>
+    <p class="mt-1 text-center text-sm text-muted">让失物有处寻 · 求助有回应</p>
+
+    <div class="mt-4 grid grid-cols-2 gap-3">
+      <router-link
+        to="/publish?type=seek"
+        class="flex flex-col items-center gap-1 rounded-lg bg-white py-4 text-sm text-ink"
+      >
+        <span class="text-2xl">🔍</span>
+        <span>发布寻物</span>
+      </router-link>
+      <router-link
+        to="/publish?type=claim"
+        class="flex flex-col items-center gap-1 rounded-lg bg-white py-4 text-sm text-ink"
+      >
+        <span class="text-2xl">📦</span>
+        <span>发布拾物</span>
+      </router-link>
+      <button
+        type="button"
+        class="flex flex-col items-center gap-1 rounded-lg bg-white py-4 text-sm text-ink"
+        @click="cabinetOpen = true"
+      >
+        <span class="text-2xl">🤝</span>
+        <span>帮帮柜</span>
+      </button>
+      <router-link
+        to="/profile"
+        class="flex flex-col items-center gap-1 rounded-lg bg-white py-4 text-sm text-ink"
+      >
+        <span class="text-2xl">👤</span>
+        <span>我的</span>
+      </router-link>
+    </div>
+
+    <h2 class="mt-5 text-lg font-bold">最近拾物</h2>
+    <p v-if="loading" class="mt-3 text-sm text-muted">加载中...</p>
+    <p v-else-if="error" class="mt-3 text-sm text-danger">{{ error }}</p>
+    <p v-else-if="items.length === 0" class="mt-3 text-sm text-muted">暂无拾物信息</p>
+    <ul v-else class="mt-2 divide-y divide-line rounded-lg bg-white">
+      <li v-for="item in items" :key="item.id">
+        <router-link :to="`/item/${item.id}?type=claim`" class="flex items-center gap-3 px-3 py-3">
+          <span class="text-2xl">🎒</span>
+          <span class="flex-1 truncate text-sm font-medium text-ink">{{ item.title }}</span>
+          <span class="text-xs text-muted">{{ item.location }}</span>
+          <span class="text-xs text-muted">{{ relativeTime(item.createTime) }}</span>
+        </router-link>
+      </li>
+    </ul>
+  </div>
+
+  <CabinetDialog :open="cabinetOpen" @close="cabinetOpen = false" />
+</template>

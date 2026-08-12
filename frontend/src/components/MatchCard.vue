@@ -1,0 +1,49 @@
+<script setup lang="ts">
+import type { MatchResult } from '@/api/types'
+import { formatPercent, scoreColor } from '@/utils/format'
+import { relativeTime } from '@/utils/time'
+
+const props = defineProps<{ result: MatchResult; large?: boolean }>()
+
+function contact() {
+  const item = props.result.lostItem
+  // 演示阶段弹提示；正式展示 lostItem.contact / lostItem.user?.phone
+  window.alert(`联系TA（演示）：${item.contact || item.user?.phone || '暂无联系方式'}`)
+}
+</script>
+
+<template>
+  <div
+    class="rounded-lg bg-white p-3"
+    :class="large ? 'border-2 border-primary shadow-sm' : 'border border-line'"
+  >
+    <div class="flex gap-3">
+      <div
+        class="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded bg-slate-100 text-3xl"
+      >
+        <img
+          v-if="result.lostItem.imageUrl"
+          :src="result.lostItem.imageUrl"
+          class="h-full w-full object-cover"
+          alt=""
+        />
+        <span v-else>📦</span>
+      </div>
+      <div class="min-w-0 flex-1">
+        <p class="truncate font-semibold text-ink">{{ result.lostItem.title }}</p>
+        <p class="mt-1 text-sm" :class="scoreColor(result.score)">
+          ⭐ {{ formatPercent(result.score) }}%
+        </p>
+        <p class="mt-1 truncate text-xs text-muted">{{ result.lostItem.location }}</p>
+        <p class="mt-0.5 text-xs text-muted">{{ relativeTime(result.lostItem.createTime) }}</p>
+      </div>
+    </div>
+    <button
+      v-if="large"
+      class="mt-3 w-full rounded bg-primary py-2.5 text-sm text-white"
+      @click="contact"
+    >
+      🔗 联系TA
+    </button>
+  </div>
+</template>
