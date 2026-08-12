@@ -95,6 +95,7 @@ src/test/java/      # MockMvc / Mockito 单元测试
 | `GET` | `/api/v1/find-items` | ❌ | 寻物列表 `?title=&page=&size=` |
 | `GET` | `/api/v1/find-items/{id}` | ❌ | 寻物详情 |
 | `GET` | `/api/v1/find-items/{id}/matches?limit=3` | ❌ | 智能匹配（寻物 → 拾物） |
+| `GET` | `/health` | ❌ | 健康检查（微信云托管） |
 
 ## 🔐 认证方案
 
@@ -160,3 +161,4 @@ curl -X POST :8080/api/v1/lost-items -H "Authorization: Bearer $TOKEN" \
 | `plans/lost-item.md` | LostItem + FindItem CRUD 开发记录 |
 | `plans/find-item.md` | FindItem 审批计划 |
 | `plans/match.md` | 智能匹配审批计划 |
+| `plans/frontend.md` | 前端脚手架搭建计划 |
