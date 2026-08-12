@@ -56,4 +56,11 @@ public class FindItem {
      */
     @Column(name = "create_time")
     private LocalDateTime createTime;
+
+    /**
+     * 发布者，关联用户表
+     */
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user;
 }

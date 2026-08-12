@@ -1,6 +1,7 @@
 package com.uang.backend.service;
 
 import com.uang.backend.entity.FindItem;
+import com.uang.backend.entity.User;
 import com.uang.backend.repository.FindItemRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,13 +28,24 @@ class FindItemServiceTest {
     @Mock
     private FindItemRepository repository;
 
+    @Mock
+    private UserService userService;
+
     private FindItemService service;
 
     private FindItem sampleItem;
 
+    private User sampleUser;
+
     @BeforeEach
     void setUp() {
-        service = new FindItemService(repository);
+        service = new FindItemService(repository, userService);
+        sampleUser = new User();
+        sampleUser.setId(1L);
+        sampleUser.setPhone("13800001111");
+        sampleUser.setNickname("张三");
+        sampleUser.setStatus(User.Status.NORMAL);
+        sampleUser.setCreateTime(LocalDateTime.now());
         sampleItem = new FindItem();
         sampleItem.setId(1L);
         sampleItem.setTitle("黑色钱包");
@@ -45,17 +57,49 @@ class FindItemServiceTest {
     }
 
     @Test
-    void create_shouldSetIdToNullAndSetCreateTime() {
+    void create_shouldSetIdNullSetCreateTimeAndAssociateUser() {
         FindItem input = new FindItem();
         input.setId(999L);
         input.setTitle("测试物品");
 
+        when(userService.findById(1L)).thenReturn(sampleUser);
         when(repository.save(any(FindItem.class))).thenReturn(sampleItem);
 
-        FindItem result = service.create(input);
+        FindItem result = service.create(input, 1L);
 
+        verify(userService).findById(1L);
         verify(repository).save(any(FindItem.class));
         assertThat(result).isNotNull();
+        assertThat(input.getUser()).isEqualTo(sampleUser);
+        // contact 为空 → 默认取发布者手机号
+        assertThat(input.getContact()).isEqualTo("13800001111");
+    }
+
+    @Test
+    void create_shouldKeepContactWhenProvided() {
+        FindItem input = new FindItem();
+        input.setTitle("测试物品");
+        input.setContact("13900002222");
+
+        when(userService.findById(1L)).thenReturn(sampleUser);
+        when(repository.save(any(FindItem.class))).thenReturn(sampleItem);
+
+        service.create(input, 1L);
+
+        assertThat(input.getContact()).isEqualTo("13900002222");
+    }
+
+    @Test
+    void create_shouldThrowWhenUserNotFound() {
+        FindItem input = new FindItem();
+        input.setTitle("测试物品");
+
+        when(userService.findById(999L))
+                .thenThrow(new RuntimeException("用户不存在，id: 999"));
+
+        assertThatThrownBy(() -> service.create(input, 999L))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("用户不存在");
     }
 
     @Test

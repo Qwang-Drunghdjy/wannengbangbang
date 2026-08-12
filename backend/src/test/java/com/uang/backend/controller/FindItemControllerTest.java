@@ -1,7 +1,9 @@
 package com.uang.backend.controller;
 
+import com.uang.backend.config.JwtUtil;
 import com.uang.backend.entity.FindItem;
 import com.uang.backend.service.FindItemService;
+import io.jsonwebtoken.Claims;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -16,6 +18,7 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -31,6 +34,10 @@ class FindItemControllerTest {
     @MockitoBean
     private FindItemService service;
 
+    // @WebMvcTest 会加载 WebMvcConfig + AuthInterceptor，需要 JwtUtil bean
+    @MockitoBean
+    private JwtUtil jwtUtil;
+
     @Test
     void create_shouldReturnSavedItem() throws Exception {
         FindItem item = new FindItem();
@@ -41,7 +48,10 @@ class FindItemControllerTest {
         item.setContact("13800001111");
         item.setCreateTime(LocalDateTime.now());
 
-        when(service.create(any(FindItem.class))).thenReturn(item);
+        Claims claims = mock(Claims.class);
+        when(claims.getSubject()).thenReturn("1");
+        when(jwtUtil.parseToken("test-token")).thenReturn(claims);
+        when(service.create(any(FindItem.class), eq(1L))).thenReturn(item);
 
         String body = """
                 {
@@ -53,11 +63,28 @@ class FindItemControllerTest {
                 """;
 
         mockMvc.perform(post("/api/v1/find-items")
+                        .header("Authorization", "Bearer test-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.data.title").value("黑色钱包"));
+    }
+
+    @Test
+    void create_shouldReturn401WhenNoToken() throws Exception {
+        String body = """
+                {
+                    "title": "黑色钱包"
+                }
+                """;
+
+        mockMvc.perform(post("/api/v1/find-items")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value(401))
+                .andExpect(jsonPath("$.message").value("未登录或登录已过期"));
     }
 
     @Test

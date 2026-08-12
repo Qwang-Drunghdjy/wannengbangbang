@@ -120,7 +120,6 @@ curl -X POST :8080/api/v1/lost-items -H "Authorization: Bearer $TOKEN" \
 | ------ | ------ |
 | `AGENTS.md` | 项目心智模型 + 全局约定（本文档） |
 | `docs/data-model.md` | 完整的数据库表字段定义 |
-| `PLAN.md` | LostItem + FindItem CRUD 开发记录 |
-| `NEXT_STEPS.md` | FindItem 模块任务清单 |
+| `plans/lost-item.md` | LostItem + FindItem CRUD 开发记录 |
 | `plans/find-item.md` | FindItem 审批计划 |
 | `plans/match.md` | 智能匹配审批计划 |

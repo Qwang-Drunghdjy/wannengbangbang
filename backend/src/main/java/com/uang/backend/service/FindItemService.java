@@ -1,6 +1,7 @@
 package com.uang.backend.service;
 
 import com.uang.backend.entity.FindItem;
+import com.uang.backend.entity.User;
 import com.uang.backend.repository.FindItemRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -16,19 +17,27 @@ import java.time.LocalDateTime;
 public class FindItemService {
 
     private final FindItemRepository repository;
+    private final UserService userService;
 
-    public FindItemService(FindItemRepository repository) {
+    public FindItemService(FindItemRepository repository, UserService userService) {
         this.repository = repository;
+        this.userService = userService;
     }
 
     /**
      * 发布新的寻物信息
      * @param item 寻物实体（id 和 createTime 由服务端设置）
+     * @param userId 发布者用户 ID（来自 JWT）
      * @return 保存后的寻物实体
      */
-    public FindItem create(FindItem item) {
+    public FindItem create(FindItem item, Long userId) {
         item.setId(null);
         item.setCreateTime(LocalDateTime.now());
+        User user = userService.findById(userId);
+        item.setUser(user);
+        if (!StringUtils.hasText(item.getContact())) {
+            item.setContact(user.getPhone());
+        }
         return repository.save(item);
     }
 

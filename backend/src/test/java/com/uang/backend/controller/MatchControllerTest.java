@@ -1,5 +1,6 @@
 package com.uang.backend.controller;
 
+import com.uang.backend.config.JwtUtil;
 import com.uang.backend.dto.MatchResult;
 import com.uang.backend.entity.LostItem;
 import com.uang.backend.service.MatchingService;
@@ -25,6 +26,10 @@ class MatchControllerTest {
 
     @MockitoBean
     private MatchingService matchingService;
+
+    // @WebMvcTest 会加载 WebMvcConfig + AuthInterceptor，需要 JwtUtil bean
+    @MockitoBean
+    private JwtUtil jwtUtil;
 
     @Test
     void findMatches_shouldReturnResults() throws Exception {

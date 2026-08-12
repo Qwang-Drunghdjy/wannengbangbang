@@ -1,8 +1,10 @@
 package com.uang.backend.controller;
 
+import com.uang.backend.config.AuthInterceptor;
 import com.uang.backend.dto.Result;
 import com.uang.backend.entity.FindItem;
 import com.uang.backend.service.FindItemService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
@@ -24,11 +26,13 @@ public class FindItemController {
      * 发布新的寻物信息
      * POST /api/v1/find-items
      * @param item 寻物信息（JSON body）
+     * @param request 请求（从中提取拦截器注入的 userId）
      * @return 保存后的寻物
      */
     @PostMapping
-    public Result<FindItem> create(@RequestBody FindItem item) {
-        FindItem saved = service.create(item);
+    public Result<FindItem> create(@RequestBody FindItem item, HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute(AuthInterceptor.USER_ID_ATTR);
+        FindItem saved = service.create(item, userId);
         return Result.success(saved);
     }
 

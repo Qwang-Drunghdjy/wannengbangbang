@@ -1,6 +1,7 @@
 package com.uang.backend.service;
 
 import com.uang.backend.entity.LostItem;
+import com.uang.backend.entity.User;
 import com.uang.backend.repository.LostItemRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -16,19 +17,27 @@ import java.time.LocalDateTime;
 public class LostItemService {
 
     private final LostItemRepository repository;
+    private final UserService userService;
 
-    public LostItemService(LostItemRepository repository) {
+    public LostItemService(LostItemRepository repository, UserService userService) {
         this.repository = repository;
+        this.userService = userService;
     }
 
     /**
      * 发布新的失物信息
      * @param item 失物实体（id 和 createTime 由服务端设置）
+     * @param userId 发布者用户 ID（来自 JWT）
      * @return 保存后的失物实体
      */
-    public LostItem create(LostItem item) {
+    public LostItem create(LostItem item, Long userId) {
         item.setId(null);
         item.setCreateTime(LocalDateTime.now());
+        User user = userService.findById(userId);
+        item.setUser(user);
+        if (!StringUtils.hasText(item.getContact())) {
+            item.setContact(user.getPhone());
+        }
         return repository.save(item);
     }
 

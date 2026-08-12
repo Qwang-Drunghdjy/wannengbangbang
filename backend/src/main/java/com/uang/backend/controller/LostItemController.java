@@ -1,8 +1,10 @@
 package com.uang.backend.controller;
 
+import com.uang.backend.config.AuthInterceptor;
 import com.uang.backend.dto.Result;
 import com.uang.backend.entity.LostItem;
 import com.uang.backend.service.LostItemService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
@@ -24,11 +26,13 @@ public class LostItemController {
      * 发布新的失物信息
      * POST /api/v1/lost-items
      * @param item 失物信息（JSON body）
+     * @param request 请求（从中提取拦截器注入的 userId）
      * @return 保存后的失物
      */
     @PostMapping
-    public Result<LostItem> create(@RequestBody LostItem item) {
-        LostItem saved = service.create(item);
+    public Result<LostItem> create(@RequestBody LostItem item, HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute(AuthInterceptor.USER_ID_ATTR);
+        LostItem saved = service.create(item, userId);
         return Result.success(saved);
     }
 

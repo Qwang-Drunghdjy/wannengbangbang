@@ -1,7 +1,9 @@
 package com.uang.backend.controller;
 
+import com.uang.backend.config.JwtUtil;
 import com.uang.backend.entity.LostItem;
 import com.uang.backend.service.LostItemService;
+import io.jsonwebtoken.Claims;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -16,6 +18,7 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -31,6 +34,10 @@ class LostItemControllerTest {
     @MockitoBean
     private LostItemService service;
 
+    // @WebMvcTest 会加载 WebMvcConfig + AuthInterceptor，需要 JwtUtil bean
+    @MockitoBean
+    private JwtUtil jwtUtil;
+
     @Test
     void create_shouldReturnSavedItem() throws Exception {
         LostItem item = new LostItem();
@@ -41,7 +48,10 @@ class LostItemControllerTest {
         item.setContact("13800001111");
         item.setCreateTime(LocalDateTime.now());
 
-        when(service.create(any(LostItem.class))).thenReturn(item);
+        Claims claims = mock(Claims.class);
+        when(claims.getSubject()).thenReturn("1");
+        when(jwtUtil.parseToken("test-token")).thenReturn(claims);
+        when(service.create(any(LostItem.class), eq(1L))).thenReturn(item);
 
         String body = """
                 {
@@ -54,11 +64,29 @@ class LostItemControllerTest {
                 """;
 
         mockMvc.perform(post("/api/v1/lost-items")
+                        .header("Authorization", "Bearer test-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.data.title").value("黑色钱包"));
+    }
+
+    @Test
+    void create_shouldReturn401WhenNoToken() throws Exception {
+        String body = """
+                {
+                    "title": "黑色钱包",
+                    "image_url": "https://example.com/img.jpg"
+                }
+                """;
+
+        mockMvc.perform(post("/api/v1/lost-items")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value(401))
+                .andExpect(jsonPath("$.message").value("未登录或登录已过期"));
     }
 
     @Test
