@@ -78,11 +78,12 @@
 
 #### 3.1.3 最新消息列表区域（寻物 + 拾物混合）
 
-- 标题：`"最新消息"`，字号 `18px`，加粗。
+- 标题：`"最新消息"`，字号 `18px`，加粗；**标题行右侧**为 `"全部消息 →"` 文字按钮（主色 `#2563EB`），点击进入 `/all-messages`（见 3.7 节）。
 - 数据源：分别请求 `GET /api/v1/lost-items?page=0&size=6&sort=createTime,desc`（拾物招领）与 `GET /api/v1/find-items?page=0&size=6&sort=createTime,desc`（寻物启事），**前端合并后按发布时间倒序取前 6 条**（某类不足 6 条时由另一类补足；总数不足 6 条显示实际条数）。
 - 列表项（每条显示）：
   - **类型图标 + 彩色标签**：寻物启事 🔍 + 橙色标签 `"寻物"`；拾物招领 🎒 + 绿色标签 `"拾物"`。
   - **物品名称** | **地点** | **相对时间**
+  - 复用 `ItemListItem` 组件（新页「全部消息」同款）。
 - 列表项点击 → 按类型跳转：拾物 → `/item/:id?type=claim`；寻物 → `/item/:id?type=seek`。
 - 列表可滚动，支持下拉刷新（暂不实现）。
 
@@ -209,7 +210,7 @@
 
 - 每个列表项为一行，左侧图标 + 文字，右侧显示附加信息 + 箭头（→）。
 - 列表项：
-  - 📋 我的发布 → 右侧 `3条 →`（点击跳转至我的发布列表页，暂不实现）
+  - 📋 我的发布 → 右侧 `N条 →`（点击跳转 `/all-messages?mine=1`，见 3.7 节，自动开启"仅查看我的"）
   - 🔗 我的匹配 → 右侧 `5次 →`（点击跳转至匹配记录页，暂不实现）
   - ⭐ 信用评分 → 右侧 `4.8分 →`（点击跳转至信用详情，暂不实现）
   - ⚙️ 设置 → 右侧 `→`（点击跳转至设置页，暂不实现）
@@ -236,6 +237,33 @@
 - 表单字段：手机号、密码、昵称。
 - 提交：`POST /api/v1/auth/register`（公开接口）→ 成功后自动跳转 `/login`（提示"注册成功，请登录"）。
 - 注册失败（手机号已注册 / 字段缺失）：红字提示。
+
+---
+
+### 3.7 全部消息页 (`/all-messages`，二级页)
+
+> 入口：首页「最新消息」标题右侧的「全部消息 →」按钮。二级页（SimpleLayout + 返回按钮），标题 `"全部消息"`。
+
+#### 3.7.1 标签页 + 「仅查看我的」开关
+
+- **标签页**：`寻物 | 拾物`，默认选中**寻物**；切换后重置为第一页重新加载。
+  - 寻物 tab → `GET /api/v1/find-items`
+  - 拾物 tab → `GET /api/v1/lost-items`
+- **「仅查看我的」开关**（默认关闭）：开启后请求附加 `mine=true`，仅返回当前用户发布的内容。
+  - **未登录**：开关置灰（`opacity-50`），点击 `alert("请先登录")`，不切换。
+  - 已登录：切换开关重置为第一页重新加载；切换时会通过 `router.replace` 同步 URL query（`mine=1` 表示开启），刷新 / 返回后状态保持一致。
+  - **入口**：「我的」→「我的发布」携带 `?mine=1` 进入，开关自动开启（见 3.5.2）。
+
+#### 3.7.2 列表与分页
+
+- 每页 10 条，`sort=createTime,desc`（最新在上）。
+- 底部「加载更多」按钮：追加下一页（按 id 去重）；`content.length < page.totalElements` 时显示。
+- 列表项复用 `ItemListItem` 组件（🔍/🎒 + 彩色标签 + 标题 + 地点 + 相对时间），点击跳详情 `/item/:id?type=seek|claim`。
+- 空态文案：未开 mine → `"暂无寻物消息"` / `"暂无拾物消息"`；开 mine → `"您还没有发布寻物消息"` / `"您还没有发布拾物消息"`。
+
+#### 3.7.3 数据形状
+
+- 列表接口 data 为 `{ content: [...], page: { size, number, totalElements, totalPages } }`（Spring Boot 3.4 新 Page 序列化），前端取 `content` 与 `page.totalElements` 判断是否还有更多。
 
 ---
 
@@ -272,6 +300,7 @@
 | 寻物启事（我丢了东西） | `'seek'` | `POST /api/v1/find-items` | `find_item` / `FindItem` | 发布成功后可查匹配 |
 | 拾物招领（我捡到东西） | `'claim'` | `POST /api/v1/lost-items` | `lost_item` / `LostItem` | 图片必填 |
 | 首页"最新消息"列表 | — | 分别请求 `GET /api/v1/lost-items?page=0&size=6&sort=createTime,desc` 与 `GET /api/v1/find-items?page=0&size=6&sort=createTime,desc`，前端合并取前 6 | `lost_item` + `find_item` | 拾物 + 寻物混合 |
+| "全部消息"页列表 | — | 按 tab：寻物 `GET /api/v1/find-items` / 拾物 `GET /api/v1/lost-items`，支持 `?page=&size=&sort=&mine=` | 按 tab 选择 | `mine=true` 需登录，未登录/无效 token → HTTP 401 |
 | 物品详情 | — | `GET /api/v1/lost-items/{id}` 或 `GET /api/v1/find-items/{id}` | 按 type 选择 | — |
 | 智能匹配 | — | `GET /api/v1/find-items/{id}/matches?limit=3` | — | `score` 0.0 ~ 1.0 |
 | 注册 / 登录 | — | `POST /api/v1/auth/register` / `POST /api/v1/auth/login` | `user` | 返回 Bearer token |
@@ -410,8 +439,10 @@ POST /api/v1/auth/register      { phone, password, nickname }
 POST /api/v1/auth/login         { phone, password }
 
 // ── 拾物招领（lost_item，图片必填）──
-// 拾物列表（公开）：data 为分页对象，取 data.content；首页"最新消息"区按时间倒序取 6 条
+// 拾物列表（公开）：data 为分页对象（{ content, page }），取 data.content；首页"最新消息"区按时间倒序取 6 条
 GET  /api/v1/lost-items?page=0&size=6&sort=createTime,desc
+// 拾物列表·仅查看我的（需登录，无/无效 token 返回 HTTP 401）
+GET  /api/v1/lost-items?mine=true&page=0&size=10&sort=createTime,desc
 // 拾物详情（公开）
 GET  /api/v1/lost-items/{id}
 // 发布拾物（需登录）
@@ -420,6 +451,8 @@ POST /api/v1/lost-items         { title, description?, location, contact?, image
 // ── 寻物启事（find_item，图片可选）──
 // 寻物列表（公开）：首页"最新消息"区同样按时间倒序取 6 条
 GET  /api/v1/find-items?page=0&size=6&sort=createTime,desc
+// 寻物列表·仅查看我的（需登录，无/无效 token 返回 HTTP 401）
+GET  /api/v1/find-items?mine=true&page=0&size=10&sort=createTime,desc
 // 寻物详情（公开）
 GET  /api/v1/find-items/{id}
 // 发布寻物（需登录）

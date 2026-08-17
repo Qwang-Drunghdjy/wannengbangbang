@@ -68,13 +68,16 @@ export interface LoginResponse {
   nickname: string
 }
 
-/** 分页结构（Spring Data Page，列表接口 data 形状） */
-export interface PageResult<T> {
-  content: T[]
+/** 分页元数据（Spring Boot 3.4 新 Page 序列化：data = { content, page }） */
+export interface PageMeta {
+  size: number
+  number: number
   totalElements: number
   totalPages: number
-  number: number
-  size: number
-  first: boolean
-  last: boolean
+}
+
+/** 分页结构（列表接口 data 形状：content 在顶层，元数据在 page 子对象） */
+export interface PageResult<T> {
+  content: T[]
+  page: PageMeta
 }

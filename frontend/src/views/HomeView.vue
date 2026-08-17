@@ -3,7 +3,7 @@ import { onMounted, ref } from 'vue'
 import { fetchFindItems, fetchLostItems } from '@/api/items'
 import type { PublishItem } from '@/api/types'
 import CabinetDialog from '@/components/CabinetDialog.vue'
-import { relativeTime } from '@/utils/time'
+import ItemListItem from '@/components/ItemListItem.vue'
 
 const items = ref<PublishItem[]>([])
 const loading = ref(false)
@@ -74,30 +74,16 @@ onMounted(async () => {
       </router-link>
     </div>
 
-    <h2 class="mt-5 text-lg font-bold">最新消息</h2>
+    <div class="mt-5 flex items-center justify-between">
+      <h2 class="text-lg font-bold">最新消息</h2>
+      <router-link to="/all-messages" class="text-sm text-primary">全部消息 →</router-link>
+    </div>
     <p v-if="loading" class="mt-3 text-sm text-muted">加载中...</p>
     <p v-else-if="error" class="mt-3 text-sm text-danger">{{ error }}</p>
     <p v-else-if="items.length === 0" class="mt-3 text-sm text-muted">暂无消息</p>
     <ul v-else class="mt-2 divide-y divide-line rounded-lg bg-white">
       <li v-for="item in items" :key="item.id">
-        <router-link
-          :to="`/item/${item.id}?type=${item.category ?? 'claim'}`"
-          class="flex items-center gap-3 px-3 py-3"
-        >
-          <span class="text-2xl">{{ item.category === 'seek' ? '🔍' : '🎒' }}</span>
-          <span class="flex-1 truncate text-sm font-medium text-ink">{{ item.title }}</span>
-          <span
-            class="shrink-0 rounded px-1.5 py-0.5 text-xs"
-            :class="
-              item.category === 'seek'
-                ? 'bg-orange-100 text-orange-600'
-                : 'bg-green-100 text-green-600'
-            "
-            >{{ item.category === 'seek' ? '寻物' : '拾物' }}</span
-          >
-          <span class="text-xs text-muted">{{ item.location }}</span>
-          <span class="text-xs text-muted">{{ relativeTime(item.createTime) }}</span>
-        </router-link>
+        <ItemListItem :item="item" />
       </li>
     </ul>
   </div>

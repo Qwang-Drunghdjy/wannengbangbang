@@ -18,6 +18,7 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -97,7 +98,7 @@ class FindItemControllerTest {
         PageImpl<FindItem> page = new PageImpl<>(
                 List.of(item), PageRequest.of(0, 10), 1);
 
-        when(service.findAll(eq("钱包"), any())).thenReturn(page);
+        when(service.findAll(eq("钱包"), isNull(), any())).thenReturn(page);
 
         mockMvc.perform(get("/api/v1/find-items")
                         .param("title", "钱包")
@@ -106,6 +107,53 @@ class FindItemControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.data.content[0].title").value("黑色钱包"));
+    }
+
+    @Test
+    void list_shouldFilterByMineWhenTokenValid() throws Exception {
+        FindItem item = new FindItem();
+        item.setId(1L);
+        item.setTitle("黑色钱包");
+        item.setCreateTime(LocalDateTime.now());
+
+        PageImpl<FindItem> page = new PageImpl<>(
+                List.of(item), PageRequest.of(0, 10), 1);
+
+        Claims claims = mock(Claims.class);
+        when(claims.getSubject()).thenReturn("1");
+        when(jwtUtil.parseToken("test-token")).thenReturn(claims);
+        when(service.findAll(isNull(), eq(1L), any())).thenReturn(page);
+
+        mockMvc.perform(get("/api/v1/find-items")
+                        .param("mine", "true")
+                        .param("page", "0")
+                        .param("size", "10")
+                        .header("Authorization", "Bearer test-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data.content[0].title").value("黑色钱包"));
+    }
+
+    @Test
+    void list_shouldReturn401WhenMineTrueAndNoToken() throws Exception {
+        mockMvc.perform(get("/api/v1/find-items")
+                        .param("mine", "true"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value(401))
+                .andExpect(jsonPath("$.message").value("未登录或登录已过期"));
+    }
+
+    @Test
+    void list_shouldReturn401WhenMineTrueAndInvalidToken() throws Exception {
+        when(jwtUtil.parseToken("bad-token"))
+                .thenThrow(new io.jsonwebtoken.JwtException("invalid"));
+
+        mockMvc.perform(get("/api/v1/find-items")
+                        .param("mine", "true")
+                        .header("Authorization", "Bearer bad-token"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value(401))
+                .andExpect(jsonPath("$.message").value("未登录或登录已过期"));
     }
 
     @Test

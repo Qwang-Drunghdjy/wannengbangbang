@@ -24,10 +24,10 @@ function onLogout() {
     </div>
 
     <div class="mt-3 divide-y divide-line rounded-lg bg-white">
-      <div class="flex items-center justify-between px-4 py-3">
+      <router-link to="/all-messages?mine=1" class="flex items-center justify-between px-4 py-3">
         <span>📋 我的发布</span>
         <span class="text-muted">{{ auth.user?.publishCount ?? 0 }}条 →</span>
-      </div>
+      </router-link>
       <div class="flex items-center justify-between px-4 py-3">
         <span>🔗 我的匹配</span>
         <span class="text-muted">{{ auth.user?.matchCount ?? 0 }}次 →</span>

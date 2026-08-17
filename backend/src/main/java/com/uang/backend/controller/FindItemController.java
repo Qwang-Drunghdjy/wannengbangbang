@@ -1,8 +1,10 @@
 package com.uang.backend.controller;
 
 import com.uang.backend.config.AuthInterceptor;
+import com.uang.backend.config.JwtUtil;
 import com.uang.backend.dto.Result;
 import com.uang.backend.entity.FindItem;
+import com.uang.backend.exception.UnauthorizedException;
 import com.uang.backend.service.FindItemService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.data.domain.Page;
@@ -17,9 +19,11 @@ import org.springframework.web.bind.annotation.*;
 public class FindItemController {
 
     private final FindItemService service;
+    private final JwtUtil jwtUtil;
 
-    public FindItemController(FindItemService service) {
+    public FindItemController(FindItemService service, JwtUtil jwtUtil) {
         this.service = service;
+        this.jwtUtil = jwtUtil;
     }
 
     /**
@@ -37,17 +41,28 @@ public class FindItemController {
     }
 
     /**
-     * 获取寻物列表（分页 + 标题搜索）
-     * GET /api/v1/find-items?title=xxx&page=0&size=10
+     * 获取寻物列表（分页 + 标题搜索 + 仅查看我的）
+     * GET /api/v1/find-items?title=xxx&page=0&size=10&mine=true
      * @param title 标题关键词（可选）
+     * @param mine 是否仅查看当前用户发布的（可选，需登录，默认 false）
+     * @param request 请求（mine=true 时解析 Bearer token 取 userId）
      * @param pageable 分页参数
      * @return 分页结果
      */
     @GetMapping
     public Result<Page<FindItem>> list(
             @RequestParam(required = false) String title,
+            @RequestParam(required = false, defaultValue = "false") Boolean mine,
+            HttpServletRequest request,
             Pageable pageable) {
-        Page<FindItem> page = service.findAll(title, pageable);
+        Long userId = null;
+        if (Boolean.TRUE.equals(mine)) {
+            userId = AuthInterceptor.extractUserId(request, jwtUtil);
+            if (userId == null) {
+                throw new UnauthorizedException("未登录或登录已过期");
+            }
+        }
+        Page<FindItem> page = service.findAll(title, userId, pageable);
         return Result.success(page);
     }
 

@@ -130,7 +130,7 @@ class LostItemServiceTest {
         Page<LostItem> page = new PageImpl<>(List.of(sampleItem));
         when(repository.findByTitleContaining("钱包", pageable)).thenReturn(page);
 
-        Page<LostItem> result = service.findAll("钱包", pageable);
+        Page<LostItem> result = service.findAll("钱包", null, pageable);
 
         verify(repository).findByTitleContaining("钱包", pageable);
         verify(repository, never()).findAll(any(PageRequest.class));
@@ -143,10 +143,36 @@ class LostItemServiceTest {
         Page<LostItem> page = new PageImpl<>(List.of(sampleItem));
         when(repository.findAll(pageable)).thenReturn(page);
 
-        Page<LostItem> result = service.findAll("", pageable);
+        Page<LostItem> result = service.findAll("", null, pageable);
 
         verify(repository).findAll(pageable);
         verify(repository, never()).findByTitleContaining(anyString(), any());
+        assertThat(result.getContent()).hasSize(1);
+    }
+
+    @Test
+    void findAll_shouldFilterByUserIdWhenUserIdProvided() {
+        PageRequest pageable = PageRequest.of(0, 10);
+        Page<LostItem> page = new PageImpl<>(List.of(sampleItem));
+        when(repository.findByUserId(1L, pageable)).thenReturn(page);
+
+        Page<LostItem> result = service.findAll(null, 1L, pageable);
+
+        verify(repository).findByUserId(1L, pageable);
+        verify(repository, never()).findAll(any(PageRequest.class));
+        assertThat(result.getContent()).hasSize(1);
+    }
+
+    @Test
+    void findAll_shouldFilterByUserIdAndTitleWhenBothProvided() {
+        PageRequest pageable = PageRequest.of(0, 10);
+        Page<LostItem> page = new PageImpl<>(List.of(sampleItem));
+        when(repository.findByUserIdAndTitleContaining(1L, "钱包", pageable)).thenReturn(page);
+
+        Page<LostItem> result = service.findAll("钱包", 1L, pageable);
+
+        verify(repository).findByUserIdAndTitleContaining(1L, "钱包", pageable);
+        verify(repository, never()).findAll(any(PageRequest.class));
         assertThat(result.getContent()).hasSize(1);
     }
 }

@@ -117,10 +117,10 @@ src/test/java/      # MockMvc / Mockito 单元测试
 | `POST` | `/api/v1/auth/register` | ❌ | 注册 `{ phone, password, nickname }` |
 | `POST` | `/api/v1/auth/login` | ❌ | 登录 → `{ token, userId, nickname }` |
 | `POST` | `/api/v1/lost-items` | ✅ | 发布拾物（招领，image_url 必填） |
-| `GET` | `/api/v1/lost-items` | ❌ | 拾物列表 `?title=&page=&size=` |
+| `GET` | `/api/v1/lost-items` | ❌（`mine=true` 需登录） | 拾物列表 `?title=&page=&size=&sort=&mine=` |
 | `GET` | `/api/v1/lost-items/{id}` | ❌ | 拾物详情 |
 | `POST` | `/api/v1/find-items` | ✅ | 发布寻物启事 |
-| `GET` | `/api/v1/find-items` | ❌ | 寻物列表 `?title=&page=&size=` |
+| `GET` | `/api/v1/find-items` | ❌（`mine=true` 需登录） | 寻物列表 `?title=&page=&size=&sort=&mine=` |
 | `GET` | `/api/v1/find-items/{id}` | ❌ | 寻物详情 |
 | `GET` | `/api/v1/find-items/{id}/matches?limit=3` | ❌ | 智能匹配（寻物 → 拾物） |
 | `GET` | `/health` | ❌ | 健康检查（微信云托管） |

@@ -19,4 +19,21 @@ public interface FindItemRepository extends JpaRepository<FindItem, Long> {
      * @return 分页结果
      */
     Page<FindItem> findByTitleContaining(String title, Pageable pageable);
+
+    /**
+     * 根据发布者用户 ID 分页查询（仅查看我的）
+     * @param userId 发布者用户 ID
+     * @param pageable 分页参数
+     * @return 分页结果
+     */
+    Page<FindItem> findByUserId(Long userId, Pageable pageable);
+
+    /**
+     * 根据发布者用户 ID + 标题模糊搜索（分页）
+     * @param userId 发布者用户 ID
+     * @param title 搜索关键词
+     * @param pageable 分页参数
+     * @return 分页结果
+     */
+    Page<FindItem> findByUserIdAndTitleContaining(Long userId, String title, Pageable pageable);
 }

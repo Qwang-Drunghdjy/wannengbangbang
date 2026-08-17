@@ -56,6 +56,18 @@ const router = createRouter({
       ],
     },
     {
+      path: '/all-messages',
+      component: SimpleLayout,
+      meta: { title: '全部消息' },
+      children: [
+        {
+          path: '',
+          name: 'all-messages',
+          component: () => import('@/views/AllMessagesView.vue'),
+        },
+      ],
+    },
+    {
       path: '/match-result',
       component: SimpleLayout,
       meta: { title: '匹配结果' },

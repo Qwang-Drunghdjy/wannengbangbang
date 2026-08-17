@@ -39,20 +39,33 @@ public class AuthInterceptor implements HandlerInterceptor {
             return true;
         }
 
-        String header = request.getHeader(AUTH_HEADER);
-        if (header == null || !header.startsWith(BEARER_PREFIX)) {
+        Long userId = extractUserId(request, jwtUtil);
+        if (userId == null) {
             writeUnauthorized(response);
             return false;
         }
+        request.setAttribute(USER_ID_ATTR, userId);
+        return true;
+    }
 
+    /**
+     * 从请求头解析 Bearer token 并返回用户 ID。
+     * 供 GET 等非拦截请求在需要登录态时（如列表接口的 mine=true）手动解析复用。
+     * @param request HTTP 请求
+     * @param jwtUtil JWT 工具
+     * @return 用户 ID；无 token 或 token 无效/已过期时返回 null
+     */
+    public static Long extractUserId(HttpServletRequest request, JwtUtil jwtUtil) {
+        String header = request.getHeader(AUTH_HEADER);
+        if (header == null || !header.startsWith(BEARER_PREFIX)) {
+            return null;
+        }
         String token = header.substring(BEARER_PREFIX.length());
         try {
             Claims claims = jwtUtil.parseToken(token);
-            request.setAttribute(USER_ID_ATTR, Long.valueOf(claims.getSubject()));
-            return true;
+            return Long.valueOf(claims.getSubject());
         } catch (JwtException | IllegalArgumentException e) {
-            writeUnauthorized(response);
-            return false;
+            return null;
         }
     }
 

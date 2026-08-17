@@ -53,12 +53,19 @@ public class LostItemService {
     }
 
     /**
-     * 分页查询失物列表，支持标题模糊搜索
+     * 分页查询失物列表，支持标题模糊搜索与按发布者过滤
      * @param title 搜索关键词（可选）
+     * @param userId 发布者用户 ID（仅查看我的时传入，可选）
      * @param pageable 分页参数
      * @return 分页结果
      */
-    public Page<LostItem> findAll(String title, Pageable pageable) {
+    public Page<LostItem> findAll(String title, Long userId, Pageable pageable) {
+        if (userId != null && StringUtils.hasText(title)) {
+            return repository.findByUserIdAndTitleContaining(userId, title, pageable);
+        }
+        if (userId != null) {
+            return repository.findByUserId(userId, pageable);
+        }
         if (StringUtils.hasText(title)) {
             return repository.findByTitleContaining(title, pageable);
         }

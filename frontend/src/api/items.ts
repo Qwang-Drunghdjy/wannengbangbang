@@ -19,12 +19,14 @@ export function createFindItem(payload: PublishPayload): Promise<PublishItem> {
   return post<PublishItem>('/find-items', payload)
 }
 
-/** 分页查询参数（page / size / title 模糊搜索 / sort 排序，如 'createTime,desc'） */
+/** 分页查询参数（page / size / title 模糊搜索 / sort 排序，如 'createTime,desc' / mine 仅查看我的，需登录） */
 export interface PageQuery extends Record<string, unknown> {
   page?: number
   size?: number
   title?: string
   sort?: string
+  /** 仅查看当前用户发布的内容（需 Bearer token，后端 mine=true） */
+  mine?: boolean
 }
 
 /** 拾物列表（claim，拾物招领） */
