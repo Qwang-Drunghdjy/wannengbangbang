@@ -2,8 +2,9 @@
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { createFindItem, createLostItem } from '@/api/items'
+import { describeImage } from '@/api/ai'
 import type { PublishCategory } from '@/api/types'
-import UploadArea from '@/components/UploadArea.vue'
+import UploadArea, { type UploadedImage } from '@/components/UploadArea.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -24,8 +25,45 @@ const description = ref('')
 const location = ref('')
 const contact = ref('')
 const imageUrl = ref<string | null>(null)
+const imageBase64 = ref('')
+const generating = ref(false)
 const error = ref('')
 const submitting = ref(false)
+
+/** 图片变化：Q2 规则——重新选图清空 description（保留 title）；删除图同时清空 description */
+function onImageChange(value: UploadedImage | null) {
+  if (value) {
+    imageUrl.value = value.previewUrl
+    imageBase64.value = value.base64
+    description.value = ''
+  } else {
+    imageUrl.value = null
+    imageBase64.value = ''
+    description.value = ''
+  }
+}
+
+/** 点击「自动生成描述」：调 AI 接口，成功填充 title/description，失败页内提示不阻塞发布 */
+async function onAutoDescribe() {
+  if (!imageBase64.value || generating.value) return
+  error.value = ''
+  generating.value = true
+  try {
+    const result = await describeImage({
+      imageBase64: imageBase64.value,
+      category: effectiveType.value || undefined,
+    })
+    // Q1 规则：title 仅当为空时填充；description 总是覆盖（可再编辑）
+    if (!title.value.trim()) {
+      title.value = result.title
+    }
+    description.value = result.description
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : '生成失败，请手动填写'
+  } finally {
+    generating.value = false
+  }
+}
 
 async function onSubmit() {
   error.value = ''
@@ -94,7 +132,7 @@ async function onSubmit() {
     </div>
 
     <form v-else class="space-y-4" @submit.prevent="onSubmit">
-      <UploadArea :required="isClaim" @change="(v) => (imageUrl = v)" />
+      <UploadArea :required="isClaim" @change="onImageChange" />
 
       <input
         v-model="title"
@@ -102,6 +140,17 @@ async function onSubmit() {
         placeholder="请输入物品名称"
         class="h-12 w-full rounded border border-line bg-white px-3 outline-none focus:border-primary"
       />
+      <div v-if="imageUrl" class="flex items-center gap-2">
+        <button
+          type="button"
+          :disabled="generating"
+          class="h-9 rounded-lg border border-primary/30 bg-primary/5 px-3 text-sm text-primary transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+          @click="onAutoDescribe"
+        >
+          {{ generating ? '生成中...' : '✨ 自动生成描述' }}
+        </button>
+        <span class="text-xs text-muted">识别图片生成关键词，便于匹配</span>
+      </div>
       <textarea
         v-model="description"
         rows="4"

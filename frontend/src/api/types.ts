@@ -43,6 +43,14 @@ export interface MatchResult {
   score: number
 }
 
+/** AI 自动生成描述结果（后端 POST /api/v1/ai/describe 返回 DescribeImageResult） */
+export interface DescribeResult {
+  /** 物品名称建议（可一键填入 title） */
+  title: string
+  /** 关键词描述（空格分隔，可一键填入 description） */
+  description: string
+}
+
 /** 消息（纯前端 Mock，后端暂未实现） */
 export interface Message {
   id: string
