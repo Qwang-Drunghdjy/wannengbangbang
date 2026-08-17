@@ -53,3 +53,11 @@ export function fetchFindItem(id: number | string): Promise<PublishItem> {
 export function fetchMatches(findItemId: number | string, limit = 3): Promise<MatchResult[]> {
   return get<MatchResult[]>(`/find-items/${findItemId}/matches`, { limit })
 }
+
+/** 智能匹配（拾物 → 寻物） */
+export function fetchMatchesByLostItem(
+  lostItemId: number | string,
+  limit = 3,
+): Promise<MatchResult[]> {
+  return get<MatchResult[]>(`/lost-items/${lostItemId}/matches`, { limit })
+}
