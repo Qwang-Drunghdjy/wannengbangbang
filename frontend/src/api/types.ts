@@ -32,9 +32,13 @@ export interface PublishItem {
   user?: UserProfile | null
 }
 
-/** 匹配结果（后端 GET /api/v1/find-items/{id}/matches） */
+/**
+ * 匹配结果（后端正/反向匹配共用，字段 item）：
+ * - 寻物→拾物：GET /api/v1/find-items/{id}/matches → item 为 LostItem（拾物招领）
+ * - 拾物→寻物：GET /api/v1/lost-items/{id}/matches → item 为 FindItem（寻物启事）
+ */
 export interface MatchResult {
-  lostItem: PublishItem
+  item: PublishItem
   /** 匹配度 0.0 ~ 1.0，展示时 ×100 取整 */
   score: number
 }

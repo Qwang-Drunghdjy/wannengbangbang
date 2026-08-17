@@ -3,6 +3,7 @@ package com.uang.backend.service;
 import com.uang.backend.dto.MatchResult;
 import com.uang.backend.entity.FindItem;
 import com.uang.backend.entity.LostItem;
+import com.uang.backend.repository.FindItemRepository;
 import com.uang.backend.repository.LostItemRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,11 +28,18 @@ class MatchingServiceTest {
     @Mock
     private LostItemRepository lostItemRepository;
 
+    @Mock
+    private LostItemService lostItemService;
+
+    @Mock
+    private FindItemRepository findItemRepository;
+
     private MatchingService matchingService;
 
     @BeforeEach
     void setUp() {
-        matchingService = new MatchingService(findItemService, lostItemRepository);
+        matchingService = new MatchingService(findItemService, lostItemRepository,
+                lostItemService, findItemRepository);
     }
 
     // ── tokenize ──────────────────────────────────────────────
@@ -172,13 +180,13 @@ class MatchingServiceTest {
         when(findItemService.findById(1L)).thenReturn(fi);
         when(lostItemRepository.findAll()).thenReturn(List.of(li1, li2));
 
-        List<MatchResult> results = matchingService.findMatches(1L, 3);
+        List<MatchResult<LostItem>> results = matchingService.findMatches(1L, 3);
 
         assertThat(results).hasSize(2);
         assertThat(results.get(0).getScore())
                 .isGreaterThanOrEqualTo(results.get(1).getScore());
         // 第一条应当是 "黑色钱包"（title 完全匹配）
-        assertThat(results.get(0).getLostItem().getTitle()).isEqualTo("黑色钱包");
+        assertThat(results.get(0).getItem().getTitle()).isEqualTo("黑色钱包");
     }
 
     @Test
@@ -200,7 +208,59 @@ class MatchingServiceTest {
         when(findItemService.findById(1L)).thenReturn(fi);
         when(lostItemRepository.findAll()).thenReturn(List.of());
 
-        List<MatchResult> results = matchingService.findMatches(1L, 3);
+        List<MatchResult<LostItem>> results = matchingService.findMatches(1L, 3);
+
+        assertThat(results).isEmpty();
+    }
+
+    // ── findMatchesByLostItem ────────────────────────────────
+
+    @Test
+    void findMatchesByLostItem_shouldReturnSortedResults() {
+        LostItem li = new LostItem();
+        li.setId(1L);
+        li.setTitle("黑色钱包");
+
+        FindItem fi1 = new FindItem();
+        fi1.setId(1L);
+        fi1.setTitle("黑色钱包");
+
+        FindItem fi2 = new FindItem();
+        fi2.setId(2L);
+        fi2.setTitle("白色手机");
+
+        when(lostItemService.findById(1L)).thenReturn(li);
+        when(findItemRepository.findAll()).thenReturn(List.of(fi1, fi2));
+
+        List<MatchResult<FindItem>> results = matchingService.findMatchesByLostItem(1L, 3);
+
+        assertThat(results).hasSize(2);
+        assertThat(results.get(0).getScore())
+                .isGreaterThanOrEqualTo(results.get(1).getScore());
+        // 第一条应当是 "黑色钱包"（title 完全匹配）
+        assertThat(results.get(0).getItem().getTitle()).isEqualTo("黑色钱包");
+    }
+
+    @Test
+    void findMatchesByLostItem_lostItemNotFound_shouldThrow() {
+        when(lostItemService.findById(999L))
+                .thenThrow(new RuntimeException("失物信息不存在，id: 999"));
+
+        assertThatThrownBy(() -> matchingService.findMatchesByLostItem(999L, 3))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("失物信息不存在");
+    }
+
+    @Test
+    void findMatchesByLostItem_noFindItems_shouldReturnEmptyList() {
+        LostItem li = new LostItem();
+        li.setId(1L);
+        li.setTitle("黑色钱包");
+
+        when(lostItemService.findById(1L)).thenReturn(li);
+        when(findItemRepository.findAll()).thenReturn(List.of());
+
+        List<MatchResult<FindItem>> results = matchingService.findMatchesByLostItem(1L, 3);
 
         assertThat(results).isEmpty();
     }

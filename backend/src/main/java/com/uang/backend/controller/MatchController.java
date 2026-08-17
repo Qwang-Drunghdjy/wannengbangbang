@@ -2,13 +2,15 @@ package com.uang.backend.controller;
 
 import com.uang.backend.dto.MatchResult;
 import com.uang.backend.dto.Result;
+import com.uang.backend.entity.FindItem;
+import com.uang.backend.entity.LostItem;
 import com.uang.backend.service.MatchingService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 /**
- * 智能匹配 RESTful API 控制器
+ * 智能匹配 RESTful API 控制器（正反向匹配端点集中在此）
  */
 @RestController
 @RequestMapping("/api/v1")
@@ -21,17 +23,32 @@ public class MatchController {
     }
 
     /**
-     * 为指定寻物启事查找最相似的失物信息。
+     * 为指定寻物启事查找最相似的失物信息（寻物→拾物）。
      * GET /api/v1/find-items/{id}/matches?limit=3
      * @param id    寻物启事 ID
      * @param limit 返回数量上限（默认 3）
      * @return 匹配结果列表
      */
     @GetMapping("/find-items/{id}/matches")
-    public Result<List<MatchResult>> findMatches(
+    public Result<List<MatchResult<LostItem>>> findMatches(
             @PathVariable Long id,
             @RequestParam(defaultValue = "3") int limit) {
-        List<MatchResult> matches = matchingService.findMatches(id, limit);
+        List<MatchResult<LostItem>> matches = matchingService.findMatches(id, limit);
+        return Result.success(matches);
+    }
+
+    /**
+     * 为指定拾物消息查找最相似的寻物消息（拾物→寻物）。
+     * GET /api/v1/lost-items/{id}/matches?limit=3
+     * @param id    拾物消息 ID
+     * @param limit 返回数量上限（默认 3）
+     * @return 匹配结果列表
+     */
+    @GetMapping("/lost-items/{id}/matches")
+    public Result<List<MatchResult<FindItem>>> findMatchesByLostItem(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "3") int limit) {
+        List<MatchResult<FindItem>> matches = matchingService.findMatchesByLostItem(id, limit);
         return Result.success(matches);
     }
 }

@@ -41,7 +41,7 @@ onMounted(async () => {
 
     <div v-else class="mt-4 space-y-3">
       <MatchCard :result="results[0]" large />
-      <MatchCard v-for="r in results.slice(1)" :key="r.lostItem.id" :result="r" />
+      <MatchCard v-for="r in results.slice(1)" :key="r.item.id" :result="r" />
     </div>
 
     <router-link

@@ -4,6 +4,7 @@ import com.hankcs.hanlp.HanLP;
 import com.uang.backend.dto.MatchResult;
 import com.uang.backend.entity.FindItem;
 import com.uang.backend.entity.LostItem;
+import com.uang.backend.repository.FindItemRepository;
 import com.uang.backend.repository.LostItemRepository;
 import org.springframework.stereotype.Service;
 
@@ -12,7 +13,8 @@ import java.util.stream.Collectors;
 
 /**
  * 智能匹配服务：基于 HanLP 分词 + Jaccard 相似度，
- * 为寻物启事推荐最相似的失物信息。
+ * 正向为寻物启事推荐最相似的失物信息（寻物→拾物），
+ * 反向为拾物消息推荐最相似的寻物消息（拾物→寻物）。
  */
 @Service
 public class MatchingService {
@@ -23,11 +25,17 @@ public class MatchingService {
 
     private final FindItemService findItemService;
     private final LostItemRepository lostItemRepository;
+    private final LostItemService lostItemService;
+    private final FindItemRepository findItemRepository;
 
     public MatchingService(FindItemService findItemService,
-                           LostItemRepository lostItemRepository) {
+                           LostItemRepository lostItemRepository,
+                           LostItemService lostItemService,
+                           FindItemRepository findItemRepository) {
         this.findItemService = findItemService;
         this.lostItemRepository = lostItemRepository;
+        this.lostItemService = lostItemService;
+        this.findItemRepository = findItemRepository;
     }
 
     /**
@@ -96,19 +104,39 @@ public class MatchingService {
     }
 
     /**
-     * 为指定寻物启事查找最相似的失物信息。
+     * 为指定寻物启事查找最相似的失物信息（寻物→拾物）。
      * @param findItemId 寻物启事 ID
      * @param limit 返回数量上限
      * @return 按相似度降序排列的匹配结果列表
      * @throws RuntimeException 若寻物启事不存在
      */
-    public List<MatchResult> findMatches(Long findItemId, int limit) {
+    public List<MatchResult<LostItem>> findMatches(Long findItemId, int limit) {
         FindItem findItem = findItemService.findById(findItemId);
         List<LostItem> allLostItems = lostItemRepository.findAll();
 
         return allLostItems.stream()
-                .map(li -> new MatchResult(li, calculateScore(findItem, li)))
-                .sorted(Comparator.comparingDouble(MatchResult::getScore).reversed())
+                .map(li -> new MatchResult<>(li, calculateScore(findItem, li)))
+                .sorted(Comparator.comparingDouble((MatchResult<LostItem> mr) -> mr.getScore()).reversed())
+                .limit(limit)
+                .collect(Collectors.toUnmodifiableList());
+    }
+
+    /**
+     * 为指定拾物消息查找最相似的寻物消息（拾物→寻物）。
+     * 复用 {@link #calculateScore(FindItem, LostItem)} 的对称公式：
+     * 目标拾物与候选寻物按 title / description / location 同名字段加权 Jaccard。
+     * @param lostItemId 拾物消息 ID
+     * @param limit 返回数量上限
+     * @return 按相似度降序排列的匹配结果列表
+     * @throws RuntimeException 若拾物消息不存在
+     */
+    public List<MatchResult<FindItem>> findMatchesByLostItem(Long lostItemId, int limit) {
+        LostItem lostItem = lostItemService.findById(lostItemId);
+        List<FindItem> allFindItems = findItemRepository.findAll();
+
+        return allFindItems.stream()
+                .map(fi -> new MatchResult<>(fi, calculateScore(fi, lostItem)))
+                .sorted(Comparator.comparingDouble((MatchResult<FindItem> mr) -> mr.getScore()).reversed())
                 .limit(limit)
                 .collect(Collectors.toUnmodifiableList());
     }

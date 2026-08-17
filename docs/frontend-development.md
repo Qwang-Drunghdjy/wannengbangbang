@@ -156,11 +156,11 @@
 - **主卡片**（大号，高亮边框，取 score 最高的一条）：
   - 左侧：物品图片（无图时灰色方块 + 📦 emoji）
   - 右侧信息：
-    - 物品名称：如 `"黑色双肩包"`（后端 `lostItem.title`）
+    - 物品名称：如 `"黑色双肩包"`（后端 `item.title`）
     - 匹配度：⭐ 95%（= 后端 `score` 0.95 × 100 取整，绿色文字）
     - 地点：如 `图书馆 2楼`
     - 时间：如 `2小时前`
-  - 底部按钮：`"🔗 联系TA"`，蓝色背景。点击展示发布者联系方式（`lostItem.contact` 或 `lostItem.user.phone`）；演示阶段弹提示（模拟联系）。
+  - 底部按钮：`"🔗 联系TA"`，蓝色背景。点击展示发布者联系方式（`item.contact` 或 `item.user.phone`）；演示阶段弹提示（模拟联系）。
 - **下方小卡片×2**（score 次高的两条，横向排列或纵向）：
   - 卡片1：`白色水杯 | 匹配度78% | 食堂`
   - 卡片2：`蓝色笔袋 | 匹配度62% | 教学楼`
@@ -302,7 +302,8 @@
 | 首页"最新消息"列表 | — | 分别请求 `GET /api/v1/lost-items?page=0&size=6&sort=createTime,desc` 与 `GET /api/v1/find-items?page=0&size=6&sort=createTime,desc`，前端合并取前 6 | `lost_item` + `find_item` | 拾物 + 寻物混合 |
 | "全部消息"页列表 | — | 按 tab：寻物 `GET /api/v1/find-items` / 拾物 `GET /api/v1/lost-items`，支持 `?page=&size=&sort=&mine=` | 按 tab 选择 | `mine=true` 需登录，未登录/无效 token → HTTP 401 |
 | 物品详情 | — | `GET /api/v1/lost-items/{id}` 或 `GET /api/v1/find-items/{id}` | 按 type 选择 | — |
-| 智能匹配 | — | `GET /api/v1/find-items/{id}/matches?limit=3` | — | `score` 0.0 ~ 1.0 |
+| 智能匹配（寻物→拾物） | — | `GET /api/v1/find-items/{id}/matches?limit=3` | — | `data = [{ item, score }]`，`item` 为拾物 LostItem |
+| 智能匹配（拾物→寻物） | — | `GET /api/v1/lost-items/{id}/matches?limit=3` | — | `data = [{ item, score }]`，`item` 为寻物 FindItem |
 | 注册 / 登录 | — | `POST /api/v1/auth/register` / `POST /api/v1/auth/login` | `user` | 返回 Bearer token |
 
 ### 5.2 类型定义
@@ -325,9 +326,11 @@ interface PublishItem {
   user?: UserProfile;            // 发布者（GET 详情/列表返回，后端嵌套 user 对象）
 }
 
-// 匹配结果（后端 GET /api/v1/find-items/{id}/matches 返回）
+// 匹配结果（后端正/反向匹配共用，公开）：字段为 item（泛化前的 lostItem）
+// - 寻物→拾物：GET /api/v1/find-items/{id}/matches → item 为 LostItem（拾物招领）
+// - 拾物→寻物：GET /api/v1/lost-items/{id}/matches → item 为 FindItem（寻物启事）
 interface MatchResult {
-  lostItem: PublishItem;         // 匹配到的拾物招领（后端字段 lostItem）
+  item: PublishItem;             // 匹配到的物品（后端字段 item）
   score: number;                 // 匹配度 0.0 ~ 1.0，展示时 ×100 取整为百分比
 }
 
@@ -457,8 +460,10 @@ GET  /api/v1/find-items?mine=true&page=0&size=10&sort=createTime,desc
 GET  /api/v1/find-items/{id}
 // 发布寻物（需登录）
 POST /api/v1/find-items         { title, description?, location, contact?, imageUrl }
-// 寻物启事的智能匹配（公开）：data = [{ lostItem: {...}, score: 0.0~1.0 }]
+// 寻物启事的智能匹配（公开）：data = [{ item: {...}, score: 0.0~1.0 }]，item 为拾物 LostItem
 GET  /api/v1/find-items/{id}/matches?limit=3
+// 拾物消息的智能匹配（公开）：data = [{ item: {...}, score: 0.0~1.0 }]，item 为寻物 FindItem
+GET  /api/v1/lost-items/{id}/matches?limit=3
 
 // ── 消息（后端未实现，前端保持 Mock）──
 // 获取消息列表 / 标记全部已读：本地模拟数据 + 本地状态，不请求后端

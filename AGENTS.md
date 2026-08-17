@@ -123,6 +123,7 @@ src/test/java/      # MockMvc / Mockito 单元测试
 | `GET` | `/api/v1/find-items` | ❌（`mine=true` 需登录） | 寻物列表 `?title=&page=&size=&sort=&mine=` |
 | `GET` | `/api/v1/find-items/{id}` | ❌ | 寻物详情 |
 | `GET` | `/api/v1/find-items/{id}/matches?limit=3` | ❌ | 智能匹配（寻物 → 拾物） |
+| `GET` | `/api/v1/lost-items/{id}/matches?limit=3` | ❌ | 智能匹配（拾物 → 寻物） |
 | `GET` | `/health` | ❌ | 健康检查（微信云托管） |
 
 ## 🔐 认证方案
