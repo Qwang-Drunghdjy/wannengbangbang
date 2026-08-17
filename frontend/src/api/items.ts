@@ -19,17 +19,21 @@ export function createFindItem(payload: PublishPayload): Promise<PublishItem> {
   return post<PublishItem>('/find-items', payload)
 }
 
-/** 拾物列表（首页"最近拾物"） */
-export function fetchLostItems(
-  params: { page?: number; size?: number; title?: string } = {},
-): Promise<PageResult<PublishItem>> {
+/** 分页查询参数（page / size / title 模糊搜索 / sort 排序，如 'createTime,desc'） */
+export interface PageQuery extends Record<string, unknown> {
+  page?: number
+  size?: number
+  title?: string
+  sort?: string
+}
+
+/** 拾物列表（claim，拾物招领） */
+export function fetchLostItems(params: PageQuery = {}): Promise<PageResult<PublishItem>> {
   return get<PageResult<PublishItem>>('/lost-items', params)
 }
 
-/** 寻物列表 */
-export function fetchFindItems(
-  params: { page?: number; size?: number; title?: string } = {},
-): Promise<PageResult<PublishItem>> {
+/** 寻物列表（seek，寻物启事） */
+export function fetchFindItems(params: PageQuery = {}): Promise<PageResult<PublishItem>> {
   return get<PageResult<PublishItem>>('/find-items', params)
 }
 

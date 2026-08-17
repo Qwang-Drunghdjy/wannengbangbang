@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { fetchLostItems } from '@/api/items'
+import { fetchFindItems, fetchLostItems } from '@/api/items'
 import type { PublishItem } from '@/api/types'
 import CabinetDialog from '@/components/CabinetDialog.vue'
 import { relativeTime } from '@/utils/time'
@@ -13,8 +13,19 @@ const cabinetOpen = ref(false)
 onMounted(async () => {
   loading.value = true
   try {
-    const page = await fetchLostItems({ page: 0, size: 3 })
-    items.value = page.content
+    // 并行拉取拾物（claim）与寻物（seek）各 6 条，合并后按发布时间倒序取前 6
+    const [lostPage, findPage] = await Promise.all([
+      fetchLostItems({ page: 0, size: 6, sort: 'createTime,desc' }),
+      fetchFindItems({ page: 0, size: 6, sort: 'createTime,desc' }),
+    ])
+    const merged: PublishItem[] = [
+      ...lostPage.content.map((it) => ({ ...it, category: 'claim' as const })),
+      ...findPage.content.map((it) => ({ ...it, category: 'seek' as const })),
+    ]
+    merged.sort(
+      (a, b) => new Date(b.createTime ?? 0).getTime() - new Date(a.createTime ?? 0).getTime(),
+    )
+    items.value = merged.slice(0, 6)
   } catch (e) {
     error.value = e instanceof Error ? e.message : '加载失败'
   } finally {
@@ -63,15 +74,27 @@ onMounted(async () => {
       </router-link>
     </div>
 
-    <h2 class="mt-5 text-lg font-bold">最近拾物</h2>
+    <h2 class="mt-5 text-lg font-bold">最新消息</h2>
     <p v-if="loading" class="mt-3 text-sm text-muted">加载中...</p>
     <p v-else-if="error" class="mt-3 text-sm text-danger">{{ error }}</p>
-    <p v-else-if="items.length === 0" class="mt-3 text-sm text-muted">暂无拾物信息</p>
+    <p v-else-if="items.length === 0" class="mt-3 text-sm text-muted">暂无消息</p>
     <ul v-else class="mt-2 divide-y divide-line rounded-lg bg-white">
       <li v-for="item in items" :key="item.id">
-        <router-link :to="`/item/${item.id}?type=claim`" class="flex items-center gap-3 px-3 py-3">
-          <span class="text-2xl">🎒</span>
+        <router-link
+          :to="`/item/${item.id}?type=${item.category ?? 'claim'}`"
+          class="flex items-center gap-3 px-3 py-3"
+        >
+          <span class="text-2xl">{{ item.category === 'seek' ? '🔍' : '🎒' }}</span>
           <span class="flex-1 truncate text-sm font-medium text-ink">{{ item.title }}</span>
+          <span
+            class="shrink-0 rounded px-1.5 py-0.5 text-xs"
+            :class="
+              item.category === 'seek'
+                ? 'bg-orange-100 text-orange-600'
+                : 'bg-green-100 text-green-600'
+            "
+            >{{ item.category === 'seek' ? '寻物' : '拾物' }}</span
+          >
           <span class="text-xs text-muted">{{ item.location }}</span>
           <span class="text-xs text-muted">{{ relativeTime(item.createTime) }}</span>
         </router-link>

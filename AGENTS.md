@@ -19,12 +19,14 @@ plans/          # 分步开发计划与记录
 
 ## 🛠️ 快速命令
 
-| 场景 | 命令 |
+> ⚠️ 本机未全局安装 Maven，一律使用项目自带 wrapper `mvnw.cmd`（见下方 💻 开发环境）。
+
+| 场景 | 命令（Windows） |
 | ------ | ------ |
-| 编译 | `cd backend && mvn clean compile` |
-| 测试 | `cd backend && mvn test` |
-| 打包 | `cd backend && mvn clean package` |
-| 本地启动 | `cd backend && mvn spring-boot:run` |
+| 编译 | `cd backend && .\mvnw.cmd clean compile` |
+| 测试 | `cd backend && .\mvnw.cmd test` |
+| 打包 | `cd backend && .\mvnw.cmd clean package` |
+| 本地启动 | `cd backend && .\mvnw.cmd spring-boot:run` |
 
 环境变量（由 application.yml 读取，均可省略用默认值）：
 
@@ -34,6 +36,32 @@ plans/          # 分步开发计划与记录
 | `MYSQL_USERNAME` | `root` | MySQL 用户 |
 | `MYSQL_PASSWORD` | `root` | MySQL 密码 |
 | `JWT_SECRET` | 开发默认（≥32 字符） | JWT 密钥，**生产必换** |
+
+## 💻 开发环境（本机实测，避免新会话试错）
+
+本机为 **Windows 11 + PowerShell 7**，工具链与常见 Linux/macOS 环境差异较大，**新会话务必先读本节**：
+
+| 工具 | 状态 | 说明 |
+| ------ | ------ | ------ |
+| **bash 工具** | ❌ 不可用 | Git 装在 `D:\Program Files\Git`（**非** C 盘默认路径），bash 工具只在 C 盘标准路径搜索 → 直接报 “No bash shell found”。**不要尝试 bash 命令** |
+| **替代 shell** | ✅ | 文件/HTTP 操作用 **ctx_execute（JavaScript/Node）** 或 `cmd /c`；`curl.exe` 在 `C:\Windows\System32\curl.exe` |
+| **Maven** | ⚠️ 未全局安装 | `mvn` 不在 PATH。用项目自带 wrapper：`cd backend && .\mvnw.cmd <目标>`（首次运行会自动下载 Maven） |
+| **Java** | ✅ | JDK 17，`JAVA_HOME=D:\Program Files\Java\jdk-17` |
+| **Node / npm** | ✅ | Node v24.17.0 / npm 12.0.1（前端构建直接 `npm run build`） |
+| **Git** | ✅ | `D:\Program Files\Git\cmd\git.exe`，已加入 PATH |
+
+**API 联调约定**：无 bash 时用 `ctx_execute`（JS `fetch`）直接打已部署后端，或 `curl.exe`；不要在会话里反复试探 bash。
+
+**部署地址（临时，测试用）**：
+
+- 后端（微信云托管）：`https://wannengbangbang-back-294764-10-1466165089.sh.run.tcloudbase.com`
+- 前端（EdgeOne Pages）：`https://wannengbangbang-j74p1pmq.edgeone.cool`（访问需 `eo_token`，临时）
+
+**已踩坑记录（不要再犯）**：
+
+1. **`VITE_API_BASE` 必须带 `/api/v1` 后缀**：前端 `request.ts` 的 `baseURL = VITE_API_BASE ?? '/api/v1'`，`auth.ts` 里路径是 `/auth/register`（不含前缀）。部署时若 `VITE_API_BASE` 只填域名 → 请求打到 `/auth/register`（缺前缀）→ 网关 403 / CORS 报错。正确值：`https://…sh.run.tcloudbase.com/api/v1`
+2. **后端 JSON 字段是驼峰**：发布拾物用 `imageUrl`（不是 `image_url`）；Jackson 不认蛇形
+3. **CORS 已配置**：`WebMvcConfig.addCorsMappings` 允许所有源（生产建议收紧为前端域名）
 
 ## 📁 后端架构
 
@@ -125,7 +153,7 @@ score = 0.6 × Jaccard(title) + 0.3 × Jaccard(description) + 0.1 × Jaccard(loc
 
 ## 🧪 本地开发及验证流程
 
-闭环：**改代码 → `mvn clean compile` → `mvn spring-boot:run` → curl 验证 → `mvn test`**
+闭环：**改代码 → `mvnw.cmd clean compile` → `mvnw.cmd spring-boot:run` → curl 验证 → `mvnw.cmd test`**
 
 ```bash
 # 1. 注册（公开）
@@ -136,10 +164,10 @@ curl -X POST :8080/api/v1/auth/register -H "Content-Type: application/json" \
 curl -X POST :8080/api/v1/auth/login -H "Content-Type: application/json" \
   -d '{"phone":"13800001111","password":"123456"}'
 
-# 3. 发布拾物（需带 token）
+# 3. 发布拾物（需带 token，注意字段为驼峰 imageUrl）
 curl -X POST :8080/api/v1/lost-items -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"title":"黑色钱包","description":"在图书馆捡到","location":"图书馆","image_url":"https://..."}'
+  -d '{"title":"黑色钱包","description":"在图书馆捡到","location":"图书馆","imageUrl":"https://..."}'
 ```
 
 日志：Spring Boot 默认输出到控制台（application.yml 未配置文件日志）。

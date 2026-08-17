@@ -76,17 +76,14 @@
   - **帮帮柜**（🤝）→ 触发 **帮帮柜介绍弹窗**（见第 4 节）
   - **我的**（👤）→ 跳转 `/profile`（需登录，未登录先跳 `/login`）
 
-#### 3.1.3 拾物列表区域（拾物招领）
+#### 3.1.3 最新消息列表区域（寻物 + 拾物混合）
 
-- 标题：`"最近拾物"`，字号 `18px`，加粗。
-- 数据源：`GET /api/v1/lost-items?page=0&size=3`（展示拾物招领，即"捡到的物品"）。
-- 列表项（3条示例数据，实际由 API 提供）：
-  - 每条显示：**图标（Emoji）+ 物品名称** | **地点** | **相对时间**
-  - 示例：
-    - 🎒 黑色双肩包 | 图书馆 | 2小时前
-    - 📱 白色iPhone | 食堂 | 5小时前
-    - 🔑 钥匙串 | 操场 | 1天前
-- 列表项点击 → 跳转 `/item/:id?type=claim`（拾物详情页）。
+- 标题：`"最新消息"`，字号 `18px`，加粗。
+- 数据源：分别请求 `GET /api/v1/lost-items?page=0&size=6&sort=createTime,desc`（拾物招领）与 `GET /api/v1/find-items?page=0&size=6&sort=createTime,desc`（寻物启事），**前端合并后按发布时间倒序取前 6 条**（某类不足 6 条时由另一类补足；总数不足 6 条显示实际条数）。
+- 列表项（每条显示）：
+  - **类型图标 + 彩色标签**：寻物启事 🔍 + 橙色标签 `"寻物"`；拾物招领 🎒 + 绿色标签 `"拾物"`。
+  - **物品名称** | **地点** | **相对时间**
+- 列表项点击 → 按类型跳转：拾物 → `/item/:id?type=claim`；寻物 → `/item/:id?type=seek`。
 - 列表可滚动，支持下拉刷新（暂不实现）。
 
 #### 3.1.4 底部导航栏（3项，一级 tab）
@@ -274,7 +271,7 @@
 | ---------- | ------------- | ---------- | --------------- | ------ |
 | 寻物启事（我丢了东西） | `'seek'` | `POST /api/v1/find-items` | `find_item` / `FindItem` | 发布成功后可查匹配 |
 | 拾物招领（我捡到东西） | `'claim'` | `POST /api/v1/lost-items` | `lost_item` / `LostItem` | 图片必填 |
-| 首页"最近拾物"列表 | — | `GET /api/v1/lost-items?page=0&size=3` | `lost_item` | 拾物招领 |
+| 首页"最新消息"列表 | — | 分别请求 `GET /api/v1/lost-items?page=0&size=6&sort=createTime,desc` 与 `GET /api/v1/find-items?page=0&size=6&sort=createTime,desc`，前端合并取前 6 | `lost_item` + `find_item` | 拾物 + 寻物混合 |
 | 物品详情 | — | `GET /api/v1/lost-items/{id}` 或 `GET /api/v1/find-items/{id}` | 按 type 选择 | — |
 | 智能匹配 | — | `GET /api/v1/find-items/{id}/matches?limit=3` | — | `score` 0.0 ~ 1.0 |
 | 注册 / 登录 | — | `POST /api/v1/auth/register` / `POST /api/v1/auth/login` | `user` | 返回 Bearer token |
@@ -413,16 +410,16 @@ POST /api/v1/auth/register      { phone, password, nickname }
 POST /api/v1/auth/login         { phone, password }
 
 // ── 拾物招领（lost_item，图片必填）──
-// 首页"最近拾物"列表（公开）：data 为分页对象，取 data.content
-GET  /api/v1/lost-items?page=0&size=3
+// 拾物列表（公开）：data 为分页对象，取 data.content；首页"最新消息"区按时间倒序取 6 条
+GET  /api/v1/lost-items?page=0&size=6&sort=createTime,desc
 // 拾物详情（公开）
 GET  /api/v1/lost-items/{id}
 // 发布拾物（需登录）
 POST /api/v1/lost-items         { title, description?, location, contact?, imageUrl }
 
 // ── 寻物启事（find_item，图片可选）──
-// 寻物列表（公开）
-GET  /api/v1/find-items?page=0&size=10
+// 寻物列表（公开）：首页"最新消息"区同样按时间倒序取 6 条
+GET  /api/v1/find-items?page=0&size=6&sort=createTime,desc
 // 寻物详情（公开）
 GET  /api/v1/find-items/{id}
 // 发布寻物（需登录）
