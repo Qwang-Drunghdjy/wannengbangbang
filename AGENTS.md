@@ -62,7 +62,7 @@ src/main/resources/application.yml  # 数据源 & JPA & JWT & glm 配置
 
 ## 🖥️ 前端架构
 
-Vue 3 + TS + Tailwind + Pinia + vue-router；`api/` 按域分文件（auth/items/ai），统一请求封装解包 `Result<T>`、自动带 token、401 跳登录（`request.ts`）。发布页含 `UploadArea`（canvas 压缩 → 纯 base64）+「自动生成描述」按钮。完整规范见 [docs/frontend-development.md](docs/frontend-development.md)（v1.1）。
+Vue 3 + TS + Tailwind + Pinia + vue-router；`api/` 按域分文件（auth/items/ai），统一请求封装解包 `Result<T>`、自动带 token、401 跳登录（`request.ts`）。**图标统一用 Lucide（`lucide-vue-next`），禁止 Emoji 充当图标**（全站映射见 [docs/frontend-development.md](docs/frontend-development.md) §1.4）。发布页含 `UploadArea`（canvas 压缩 → 纯 base64）+「自动生成描述」按钮。完整规范见 [docs/frontend-development.md](docs/frontend-development.md)（v1.2）。
 
 ## 🗄️ 核心数据模型
 
@@ -99,6 +99,7 @@ Vue 3 + TS + Tailwind + Pinia + vue-router；`api/` 按域分文件（auth/items
 7. AI 调用只走服务端（`GlmClient` 薄封装），Key 存 `GLM_API_KEY` **绝不下发前端**；换模型只改 `GlmClient`
 8. AI 接口必须限流（每用户 5 次/分钟，`glm.rate-limit-per-minute` 可配）
 9. 计划完成后分步执行，每步等用户确认
+10. 前端图标统一用 Lucide（`lucide-vue-next`）SVG 组件，**禁止 Emoji 充当图标**；SVG 尺寸用 Tailwind `size-*`（不吃 `text-*` 字号），装饰性图标加 `aria-hidden`（规范见 docs/frontend-development.md §1.4）
 
 ## 📋 质量检查
 
