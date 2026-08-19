@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import { ClipboardList, Link, Settings, Star, User } from 'lucide-vue-next'
+import { features } from '@/config/features'
 import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
@@ -21,7 +22,10 @@ function onLogout() {
         ><User class="size-8" aria-hidden="true"
       /></span>
       <p class="mt-2 text-lg font-semibold">{{ auth.user?.nickname || '未登录' }}</p>
-      <p class="mt-1 flex items-center gap-1 text-sm text-white/80">
+      <p
+        v-if="features.showProfileStats"
+        class="mt-1 flex items-center gap-1 text-sm text-white/80"
+      >
         <Star class="size-4 fill-current" aria-hidden="true" />
         {{ auth.user?.creditScore ?? 0 }}分
       </p>
@@ -35,20 +39,22 @@ function onLogout() {
         </span>
         <span class="text-muted">{{ auth.user?.publishCount ?? 0 }}条 →</span>
       </router-link>
-      <div class="flex items-center justify-between px-4 py-3">
-        <span class="flex items-center gap-2">
-          <Link class="size-5" aria-hidden="true" />
-          我的匹配
-        </span>
-        <span class="text-muted">{{ auth.user?.matchCount ?? 0 }}次 →</span>
-      </div>
-      <div class="flex items-center justify-between px-4 py-3">
-        <span class="flex items-center gap-2">
-          <Star class="size-5" aria-hidden="true" />
-          信用评分
-        </span>
-        <span class="text-muted">{{ auth.user?.creditScore ?? 0 }}分 →</span>
-      </div>
+      <template v-if="features.showProfileStats">
+        <div class="flex items-center justify-between px-4 py-3">
+          <span class="flex items-center gap-2">
+            <Link class="size-5" aria-hidden="true" />
+            我的匹配
+          </span>
+          <span class="text-muted">{{ auth.user?.matchCount ?? 0 }}次 →</span>
+        </div>
+        <div class="flex items-center justify-between px-4 py-3">
+          <span class="flex items-center gap-2">
+            <Star class="size-5" aria-hidden="true" />
+            信用评分
+          </span>
+          <span class="text-muted">{{ auth.user?.creditScore ?? 0 }}分 →</span>
+        </div>
+      </template>
       <div class="flex items-center justify-between px-4 py-3">
         <span class="flex items-center gap-2">
           <Settings class="size-5" aria-hidden="true" />

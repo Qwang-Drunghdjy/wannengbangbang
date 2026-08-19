@@ -2,16 +2,22 @@
 import { computed, type Component } from 'vue'
 import { useRoute } from 'vue-router'
 import { Bell, Home, User } from 'lucide-vue-next'
+import { features } from '@/config/features'
 import { useMessagesStore } from '@/stores/messages'
 
 const route = useRoute()
 const messagesStore = useMessagesStore()
 
-const tabs: { path: string; label: string; icon: Component }[] = [
+const allTabs: { path: string; label: string; icon: Component }[] = [
   { path: '/', label: '首页', icon: Home },
   { path: '/messages', label: '消息', icon: Bell },
   { path: '/profile', label: '我的', icon: User },
 ]
+
+// 「消息」Tab 暂隐藏（features.showMessagesTab 为 false 时过滤），路由与页面仍保留
+const tabs = computed(() =>
+  allTabs.filter((t) => (t.path === '/messages' ? features.showMessagesTab : true)),
+)
 
 const activePath = computed(() => route.path)
 </script>

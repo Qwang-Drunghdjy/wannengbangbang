@@ -3,6 +3,7 @@ import { onMounted, ref } from 'vue'
 import { fetchFindItems, fetchLostItems } from '@/api/items'
 import type { PublishItem } from '@/api/types'
 import { Handshake, MapPin, Package, Search, User } from 'lucide-vue-next'
+import { features } from '@/config/features'
 import CabinetDialog from '@/components/CabinetDialog.vue'
 import ItemListItem from '@/components/ItemListItem.vue'
 
@@ -39,7 +40,7 @@ onMounted(async () => {
   <div class="p-4">
     <div class="flex items-center justify-between">
       <h1 class="text-xl font-bold">万能帮帮</h1>
-      <span class="flex items-center gap-0.5 text-sm text-muted">
+      <span v-if="features.showSchoolBadge" class="flex items-center gap-0.5 text-sm text-muted">
         <MapPin class="size-4" aria-hidden="true" />
         南京审计大学
       </span>
