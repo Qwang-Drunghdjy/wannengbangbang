@@ -62,7 +62,7 @@ src/main/resources/application.yml  # 数据源 & JPA & JWT & glm 配置
 
 ## 🖥️ 前端架构
 
-Vue 3 + TS + Tailwind + Pinia + vue-router；`api/` 按域分文件（auth/items/ai），统一请求封装解包 `Result<T>`、自动带 token、401 跳登录（`request.ts`）。**图标统一用 Lucide（`lucide-vue-next`），禁止 Emoji 充当图标**（全站映射见 [docs/frontend-development.md](docs/frontend-development.md) §1.4）。发布页含 `UploadArea`（canvas 压缩 → 纯 base64）+「自动生成描述」按钮。完整规范见 [docs/frontend-development.md](docs/frontend-development.md)（v1.2）。
+Vue 3 + TS + Tailwind + Pinia + vue-router；`api/` 按域分文件（auth/items/ai），统一请求封装解包 `Result<T>`、自动带 token、401 跳登录（`request.ts`）。**图标统一用 Lucide（`lucide-vue-next`），禁止 Emoji 充当图标**（全站映射见 [docs/frontend-development.md](docs/frontend-development.md) §1.4）。发布页含 `UploadArea`（canvas 压缩 → 纯 base64）+「自动生成描述」按钮。**「已实现但暂不显示」的功能由 `config/features.ts` 集中开关控制**（首页学校标识 / 消息 Tab / 我的匹配·信用评分，改 `true` 即恢复显示，见 [docs/frontend-development.md](docs/frontend-development.md) §1.5）。完整规范见 [docs/frontend-development.md](docs/frontend-development.md)（v1.3）。
 
 ## 🗄️ 核心数据模型
 
@@ -100,6 +100,7 @@ Vue 3 + TS + Tailwind + Pinia + vue-router；`api/` 按域分文件（auth/items
 8. AI 接口必须限流（每用户 5 次/分钟，`glm.rate-limit-per-minute` 可配）
 9. 计划完成后分步执行，每步等用户确认
 10. 前端图标统一用 Lucide（`lucide-vue-next`）SVG 组件，**禁止 Emoji 充当图标**；SVG 尺寸用 Tailwind `size-*`（不吃 `text-*` 字号），装饰性图标加 `aria-hidden`（规范见 docs/frontend-development.md §1.4）
+11. 「已实现但暂不显示」的功能用 `frontend/src/config/features.ts` 开关集中管理（`v-if` 条件渲染 / 数组过滤），**禁止删除隐藏代码**；恢复显示只改开关，不改页面（规范见 docs/frontend-development.md §1.5）
 
 ## 📋 质量检查
 
@@ -115,7 +116,9 @@ Vue 3 + TS + Tailwind + Pinia + vue-router；`api/` 按域分文件（auth/items
 | `AGENTS.md` | 项目心智模型 + 全局约定（本文档） |
 | `docs/development.md` | 本机工具链、部署地址、踩坑记录、curl 冒烟模板 |
 | `docs/data-model.md` | 数据库表字段定义 |
-| `docs/frontend-development.md` | 前端开发规范 v1.1（页面 / 交互 / 数据模型 / 组件） |
+| `docs/frontend-development.md` | 前端开发规范 v1.3（页面 / 交互 / 数据模型 / 组件 / 功能开关） |
 | `plans/ai-describe.md` | 后端 AI 自动生成描述计划（已实现） |
 | `plans/ai-describe-frontend.md` | 前端「自动生成描述」计划（已实现） |
+| `plans/hide-pending-features.md` | 隐藏待完善功能（features.ts 开关，已实现） |
+| `plans/fix-publish-count.md` | 完善「我的发布」总数显示（已实现） |
 | `plans/lost-item.md` / `find-item.md` / `match.md` / `frontend.md` | 历史开发计划与记录 |

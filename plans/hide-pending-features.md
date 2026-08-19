@@ -65,7 +65,7 @@ export const features = {
 - [x] 4. `ProfileView.vue`：头部信用分 `<p>` 加 `v-if="features.showProfileStats"`；「我的匹配」「信用评分」两行包进 `<template v-if="features.showProfileStats">`
 - [x] 5. 验证（见下）
 
-## 执行记录（2026-07-09）
+## 执行记录（2026-08-19）
 
 - 全部 5 步完成；`git diff --stat`：3 个文件 +33/-17（另新增 `src/config/features.ts`）
 - `npm run lint` 通过（无 ESLint 错误）；`npm run build`（vue-tsc + vite）通过

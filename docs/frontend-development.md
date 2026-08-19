@@ -2,8 +2,13 @@
 
 > **文档用途**：为 AI Agent 提供完整的页面结构、交互逻辑、数据模型和组件规范，用于 Web 应用前端开发。
 > **技术栈建议**：Vue 3 + TypeScript + Tailwind CSS + Lucide 图标库（`lucide-vue-next`）。
-> **版本**：v1.2
+> **版本**：v1.3
 > **最后更新**：2026-08-19
+>
+> **v1.3 变更说明**（待完善功能隐藏开关 + 我的发布真实计数）：
+>
+> - 新增 §1.5「功能开关（features.ts）」：「已实现但暂不显示」的功能（首页学校标识 / 消息 Tab / 我的匹配·信用评分）由 `src/config/features.ts` 集中开关控制，改 `true` 即恢复显示，禁止删除隐藏代码。
+> - 「我的发布」计数改为真实数据：进入 `/profile` 时并行请求两列表接口 `mine=true&size=1`，取 `page.totalElements` 之和刷新 `auth.user.publishCount`（见 3.5.2）。
 >
 > **v1.2 变更说明**（图标体系升级）：
 >
@@ -43,6 +48,7 @@
 - **二级页**：发布页 `/publish`、物品详情页 `/item/:id`、匹配结果页 `/match-result`。顶部含**返回按钮**（←），**不显示底部导航**。
 - **登录 / 注册页**：无底部导航，顶部含返回按钮（←）。
 - **返回按钮逻辑**：优先 `router.back()`；无历史记录时兜底 `router.replace('/')`（防止从 tab 直达或深链进入后"回不去"）。
+- **当前隐藏**：「消息」一级 tab 因功能未完善暂由功能开关隐藏（`features.showMessagesTab`，见 1.5）；路由 `/messages` 仍保留，URL 直接访问可打开。
 
 ---
 
@@ -87,6 +93,21 @@ import { Search, Star } from 'lucide-vue-next'
 
 ---
 
+### 1.5 功能开关（features.ts，「已实现但暂不显示」）
+
+- **机制**：`src/config/features.ts` 集中导出布尔开关；页面用 `v-if` / 数组过滤引用，`false` 时不渲染，但**模板与 import 完整保留**。
+- **目的**：功能已实现但暂不面向用户（等待后续完善）；恢复显示只需把开关改 `true`，**禁止删除隐藏代码**。
+- **注意**：勿用 `v-if="false"` 硬编码或直接注释模板（`tsconfig` 开 `noUnusedLocals`，会导致 `MapPin`/`Bell`/`Link` 等图标 import 报"未使用"，构建失败）；统一走开关。
+- **现有开关**：
+
+| 开关 | 控制内容 | 当前值 |
+| ---- | -------- | ------ |
+| `showSchoolBadge` | 首页右上角「南京审计大学」标识（3.1.1） | `false` |
+| `showMessagesTab` | 底部导航「消息」Tab 与消息页入口（3.1.4 / 3.4）；路由保留 | `false` |
+| `showProfileStats` | 「我的」页头部信用分与「我的匹配」「信用评分」两行（3.5.1 / 3.5.2） | `false` |
+
+---
+
 ## 2. 页面路由与层级
 
 | 路由路径 | 页面名称 | 层级 | 需登录 | 是否显示底部导航 |
@@ -110,7 +131,7 @@ import { Search, Star } from 'lucide-vue-next'
 #### 3.1.1 顶部区域
 
 - **左上角**：文本 `"万能帮帮"`，字体加粗，字号 `20px`。
-- **右上角**：定位图标（`MapPin`）+ 文本 `"南京审计大学"`，点击可触发位置选择（暂不实现）。
+- **右上角**：定位图标（`MapPin`）+ 文本 `"南京审计大学"`，点击可触发位置选择（暂不实现）。**当前由开关 `features.showSchoolBadge=false` 隐藏**（见 1.5），待完善后恢复。
 - **顶部下方**：副标题 `"让失物有处寻 · 求助有回应"`，居中，字号 `14px`，颜色 `#64748B`。
 
 #### 3.1.2 四个功能入口（2行×2列网格）
@@ -141,6 +162,7 @@ import { Search, Star } from 'lucide-vue-next'
   - `Home` 首页 → `/`
   - `Bell` 消息 → `/messages`（有未读时显示红色角标，数量来自全局状态）
   - `User` 我的 → `/profile`
+- **当前隐藏**：「消息」导航项由 `features.showMessagesTab=false` 过滤不渲染（`tabs` 数组与未读角标代码保留，见 1.5）；实际底部仅「首页」「我的」两项。
 - 底部导航仅在一级 tab 页显示，二级页不显示（见 1.3）。
 
 ---
@@ -230,6 +252,7 @@ import { Search, Star } from 'lucide-vue-next'
 ### 3.4 消息通知页 (`/messages`，一级 tab)
 
 > **后端暂无消息接口**，本页为**纯前端 Mock**（本地模拟数据，"全部已读"仅更新本地状态），待后端实现后替换。
+> **当前状态**：本页**暂不显示**——底部导航入口由 `features.showMessagesTab=false` 隐藏（见 1.5），路由 `/messages` 保留，URL 直接访问仍可打开。
 
 #### 3.4.1 顶部导航栏
 
@@ -259,16 +282,17 @@ import { Search, Star } from 'lucide-vue-next'
 
 - 头像：圆形，直径 `64px`，显示 `User` 图标占位（有头像则显示头像 URL）。
 - 昵称：如 `"拾光者用户"`，字号 `18px`，白色。
-- 信用评分：`Star` 图标（实心 `fill-current`）+ `4.8分`，字号 `14px`，白色。
+- 信用评分：`Star` 图标（实心 `fill-current`）+ `4.8分`，字号 `14px`，白色。**当前由开关 `features.showProfileStats=false` 隐藏**（见 1.5）。
 
 #### 3.5.2 功能列表（白色卡片）
 
 - 每个列表项为一行，左侧图标 + 文字，右侧显示附加信息 + 箭头（→）。
 - 列表项（左侧 Lucide 图标 + 文字）：
   - `ClipboardList` 我的发布 → 右侧 `N条 →`（点击跳转 `/all-messages?mine=1`，见 3.7 节，自动开启"仅查看我的"）
-  - `Link` 我的匹配 → 右侧 `5次 →`（点击跳转至匹配记录页，暂不实现）
-  - `Star` 信用评分 → 右侧 `4.8分 →`（点击跳转至信用详情，暂不实现）
+  - `Link` 我的匹配 → 右侧 `5次 →`（点击跳转至匹配记录页，暂不实现；**当前由 `features.showProfileStats=false` 隐藏**，见 1.5）
+  - `Star` 信用评分 → 右侧 `4.8分 →`（点击跳转至信用详情，暂不实现；**当前由 `features.showProfileStats=false` 隐藏**，见 1.5）
   - `Settings` 设置 → 右侧 `→`（点击跳转至设置页，暂不实现）
+- **「我的发布」计数（真实数据）**：登录时后端仅返回 `token/userId/nickname`（`LoginResponse` 无 `publishCount` 字段，前端初始化为 0）。进入本页 `onMounted` 并行请求 `GET /api/v1/lost-items?mine=true&size=1` 与 `GET /api/v1/find-items?mine=true&size=1`，取两处 `page.totalElements` 之和，经 `auth.updateUser({ publishCount })` 合并写入并持久化（每次进入页面刷新；失败静默保持原值）。⚠️ **必须用 `size=1` 而非 `size=0`**（Spring Data 将 `size=0` 视为"不限量"返回全表）。
 
 #### 3.5.3 底部
 
@@ -426,6 +450,7 @@ interface LoginResponse {
 
 - **token**：登录后保存到 `localStorage`（key 如 `wb_token`），作为唯一登录凭证。
 - 当前用户信息（`UserProfile`）：从 `localStorage` 读取，登录/注册后写入。
+- 当前用户发布总数（`publishCount`）：登录时初始化为 0，进入「我的」页时由 `mine=true&size=1` 的 `totalElements` 求和刷新，经 `auth.updateUser(patch)` 合并更新并持久化（见 3.5.2）。
 - 未读消息数量（底部导航"消息"tab 红色角标；Mock 阶段本地维护）。
 - 发布类型（`seek` / `claim`）在跳转发布页时通过 URL 参数传递。
 

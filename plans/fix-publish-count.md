@@ -45,7 +45,7 @@
 - [x] 2. `ProfileView.vue`：script 区新增 `onMounted` 刷新逻辑（见 Approach），try/catch 静默失败；模板「我的发布」行不变（仍显示 `auth.user?.publishCount ?? 0`）
 - [x] 3. 验证（见下）
 
-## 执行记录（2026-07-09）
+## 执行记录（2026-08-19）
 
 - 改动：`frontend/src/stores/auth.ts`（+updateUser action）、`frontend/src/views/ProfileView.vue`（+onMounted refreshPublishCount）；后端零改动
 - `npm run lint` 通过；`npm run build`（vue-tsc + vite）通过
