@@ -45,6 +45,12 @@ export const useAuthStore = defineStore('auth', {
       this.user = null
       clearAuth()
     },
+    /** 合并更新用户信息（如发布数刷新），同步持久化到 localStorage */
+    updateUser(patch: Partial<UserProfile>): void {
+      if (!this.user) return
+      this.user = { ...this.user, ...patch }
+      setStoredUser(this.user)
+    },
     /** 清除登录态（401 时由请求层调用） */
     clear(): void {
       this.token = null

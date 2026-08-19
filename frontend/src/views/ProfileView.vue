@@ -1,11 +1,26 @@
 <script setup lang="ts">
+import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ClipboardList, Link, Settings, Star, User } from 'lucide-vue-next'
+import { fetchFindItems, fetchLostItems } from '@/api/items'
 import { features } from '@/config/features'
 import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
 const router = useRouter()
+
+/** 拉取当前用户发布总数（拾物 + 寻物，两表之和），失败时保持原值 */
+async function refreshPublishCount() {
+  try {
+    const [lostPage, findPage] = await Promise.all([
+      fetchLostItems({ mine: true, size: 1 }),
+      fetchFindItems({ mine: true, size: 1 }),
+    ])
+    auth.updateUser({ publishCount: lostPage.page.totalElements + findPage.page.totalElements })
+  } catch {
+    // 拉取失败（如 token 过期由请求层统一跳登录）静默，保持原计数
+  }
+}
 
 function onLogout() {
   if (window.confirm('确定退出登录吗？')) {
@@ -13,6 +28,8 @@ function onLogout() {
     router.replace('/login')
   }
 }
+
+onMounted(refreshPublishCount)
 </script>
 
 <template>
