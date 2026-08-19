@@ -3,6 +3,7 @@ import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { fetchMatches } from '@/api/items'
 import type { MatchResult } from '@/api/types'
+import { PartyPopper } from 'lucide-vue-next'
 import MatchCard from '@/components/MatchCard.vue'
 
 const route = useRoute()
@@ -30,7 +31,10 @@ onMounted(async () => {
 
 <template>
   <div>
-    <h1 class="text-center text-2xl font-bold">🎉 匹配成功！</h1>
+    <h1 class="flex items-center justify-center gap-1.5 text-center text-2xl font-bold">
+      <PartyPopper class="size-6 text-primary" aria-hidden="true" />
+      匹配成功！
+    </h1>
     <p class="mt-1 text-center text-sm text-muted">已为您找到以下匹配物品</p>
 
     <p v-if="loading" class="mt-6 text-center text-sm text-muted">匹配中...</p>

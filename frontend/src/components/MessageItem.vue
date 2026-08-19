@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { User } from 'lucide-vue-next'
 import type { Message } from '@/api/types'
 import { useMessagesStore } from '@/stores/messages'
 
@@ -9,7 +10,7 @@ const store = useMessagesStore()
 
 <template>
   <div class="flex gap-3 border-b border-line bg-white p-3" @click="store.markRead(message.id)">
-    <span class="text-2xl">👤</span>
+    <User class="size-6" aria-hidden="true" />
     <div class="min-w-0 flex-1">
       <p class="flex items-center gap-1.5">
         <span v-if="!message.isRead" class="h-2 w-2 shrink-0 rounded-full bg-danger" />

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { Package } from 'lucide-vue-next'
+
 defineProps<{ open: boolean }>()
 
 const emit = defineEmits<{ close: [] }>()
@@ -12,7 +14,10 @@ const emit = defineEmits<{ close: [] }>()
       @click.self="emit('close')"
     >
       <div class="w-full max-w-sm rounded-lg bg-white p-5">
-        <h2 class="text-center text-lg font-semibold">📦 万能帮帮柜</h2>
+        <h2 class="flex items-center justify-center gap-1.5 text-lg font-semibold">
+          <Package class="size-5" aria-hidden="true" />
+          万能帮帮柜
+        </h2>
         <p class="mt-3 text-sm text-muted">24小时自助存取 · 扫码即可开柜 · 全程录像追溯</p>
         <ol class="mt-3 list-decimal space-y-1 pl-5 text-sm text-ink">
           <li>小程序发布/匹配成功 → 获得取件码</li>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Camera } from 'lucide-vue-next'
 import { ref } from 'vue'
 
 const props = withDefaults(defineProps<{ required?: boolean }>(), { required: false })
@@ -79,7 +80,7 @@ function removeFile() {
       :class="{ 'border-primary text-primary': fileUrl }"
     >
       <template v-if="!fileUrl">
-        <span class="text-2xl">📷</span>
+        <Camera class="size-6" aria-hidden="true" />
         <span class="text-sm">{{ processing ? '处理中...' : '点击上传图片' }}</span>
         <span v-if="props.required" class="text-xs text-danger">拾物必填</span>
       </template>

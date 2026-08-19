@@ -1,15 +1,16 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, type Component } from 'vue'
 import { useRoute } from 'vue-router'
+import { Bell, Home, User } from 'lucide-vue-next'
 import { useMessagesStore } from '@/stores/messages'
 
 const route = useRoute()
 const messagesStore = useMessagesStore()
 
-const tabs = [
-  { path: '/', label: '首页', icon: '🏠' },
-  { path: '/messages', label: '消息', icon: '🔔' },
-  { path: '/profile', label: '我的', icon: '👤' },
+const tabs: { path: string; label: string; icon: Component }[] = [
+  { path: '/', label: '首页', icon: Home },
+  { path: '/messages', label: '消息', icon: Bell },
+  { path: '/profile', label: '我的', icon: User },
 ]
 
 const activePath = computed(() => route.path)
@@ -27,8 +28,8 @@ const activePath = computed(() => route.path)
       class="relative flex flex-1 flex-col items-center justify-center gap-0.5 text-xs"
       :class="activePath === tab.path ? 'text-primary' : 'text-muted'"
     >
-      <span class="relative text-xl leading-none">
-        {{ tab.icon }}
+      <span class="relative">
+        <component :is="tab.icon" class="size-5" aria-hidden="true" />
         <span
           v-if="tab.path === '/messages' && messagesStore.unreadCount > 0"
           class="absolute -right-2 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] leading-none text-white"

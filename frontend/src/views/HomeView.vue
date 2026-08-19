@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { fetchFindItems, fetchLostItems } from '@/api/items'
 import type { PublishItem } from '@/api/types'
+import { Handshake, MapPin, Package, Search, User } from 'lucide-vue-next'
 import CabinetDialog from '@/components/CabinetDialog.vue'
 import ItemListItem from '@/components/ItemListItem.vue'
 
@@ -38,7 +39,10 @@ onMounted(async () => {
   <div class="p-4">
     <div class="flex items-center justify-between">
       <h1 class="text-xl font-bold">万能帮帮</h1>
-      <span class="text-sm text-muted">📍 南京审计大学</span>
+      <span class="flex items-center gap-0.5 text-sm text-muted">
+        <MapPin class="size-4" aria-hidden="true" />
+        南京审计大学
+      </span>
     </div>
     <p class="mt-1 text-center text-sm text-muted">让失物有处寻 · 求助有回应</p>
 
@@ -47,14 +51,14 @@ onMounted(async () => {
         to="/publish?type=seek"
         class="flex flex-col items-center gap-1 rounded-lg bg-white py-4 text-sm text-ink"
       >
-        <span class="text-2xl">🔍</span>
+        <Search class="size-6" aria-hidden="true" />
         <span>发布寻物</span>
       </router-link>
       <router-link
         to="/publish?type=claim"
         class="flex flex-col items-center gap-1 rounded-lg bg-white py-4 text-sm text-ink"
       >
-        <span class="text-2xl">📦</span>
+        <Package class="size-6" aria-hidden="true" />
         <span>发布拾物</span>
       </router-link>
       <button
@@ -62,14 +66,14 @@ onMounted(async () => {
         class="flex flex-col items-center gap-1 rounded-lg bg-white py-4 text-sm text-ink"
         @click="cabinetOpen = true"
       >
-        <span class="text-2xl">🤝</span>
+        <Handshake class="size-6" aria-hidden="true" />
         <span>帮帮柜</span>
       </button>
       <router-link
         to="/profile"
         class="flex flex-col items-center gap-1 rounded-lg bg-white py-4 text-sm text-ink"
       >
-        <span class="text-2xl">👤</span>
+        <User class="size-6" aria-hidden="true" />
         <span>我的</span>
       </router-link>
     </div>

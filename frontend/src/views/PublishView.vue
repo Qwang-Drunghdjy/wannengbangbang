@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { createFindItem, createLostItem } from '@/api/items'
 import { describeImage } from '@/api/ai'
 import type { PublishCategory } from '@/api/types'
+import { Package, Search, Sparkles } from 'lucide-vue-next'
 import UploadArea, { type UploadedImage } from '@/components/UploadArea.vue'
 
 const route = useRoute()
@@ -116,7 +117,7 @@ async function onSubmit() {
         class="flex w-full flex-col items-center gap-1 rounded-lg border-2 border-line bg-white py-5"
         @click="picked = 'seek'"
       >
-        <span class="text-3xl">🔍</span>
+        <Search class="size-8" aria-hidden="true" />
         <span class="font-semibold">寻物启事</span>
         <span class="text-xs text-muted">我丢了东西，找它</span>
       </button>
@@ -125,7 +126,7 @@ async function onSubmit() {
         class="flex w-full flex-col items-center gap-1 rounded-lg border-2 border-line bg-white py-5"
         @click="picked = 'claim'"
       >
-        <span class="text-3xl">📦</span>
+        <Package class="size-8" aria-hidden="true" />
         <span class="font-semibold">拾物招领</span>
         <span class="text-xs text-muted">我捡到东西，还给它</span>
       </button>
@@ -144,10 +145,11 @@ async function onSubmit() {
         <button
           type="button"
           :disabled="generating"
-          class="h-9 rounded-lg border border-primary/30 bg-primary/5 px-3 text-sm text-primary transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+          class="flex h-9 items-center gap-1 rounded-lg border border-primary/30 bg-primary/5 px-3 text-sm text-primary transition-colors disabled:cursor-not-allowed disabled:opacity-60"
           @click="onAutoDescribe"
         >
-          {{ generating ? '生成中...' : '✨ 自动生成描述' }}
+          <Sparkles v-if="!generating" class="size-4" aria-hidden="true" />
+          {{ generating ? '生成中...' : '自动生成描述' }}
         </button>
         <span class="text-xs text-muted">识别图片生成关键词，便于匹配</span>
       </div>

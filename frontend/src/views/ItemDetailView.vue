@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { fetchFindItem, fetchLostItem, fetchMatches, fetchMatchesByLostItem } from '@/api/items'
 import type { MatchResult, PublishItem } from '@/api/types'
+import { FolderOpen, Link, Package, Search } from 'lucide-vue-next'
 import MatchCard from '@/components/MatchCard.vue'
 import { relativeTime } from '@/utils/time'
 
@@ -69,24 +70,30 @@ function toggleMatches() {
 
 <template>
   <div v-if="item" class="space-y-4">
-    <div
-      class="flex h-56 items-center justify-center overflow-hidden rounded bg-slate-100 text-6xl"
-    >
+    <div class="flex h-56 items-center justify-center overflow-hidden rounded bg-slate-100">
       <img v-if="item.imageUrl" :src="item.imageUrl" class="h-full w-full object-cover" alt="" />
-      <span v-else>📦</span>
+      <Package v-else class="size-16" aria-hidden="true" />
     </div>
     <h1 class="text-xl font-bold">{{ item.title }}</h1>
     <p class="text-sm text-muted">{{ isClaim ? '拾到地点' : '丢失地点' }}：{{ item.location }}</p>
     <p v-if="item.description" class="text-sm text-ink">{{ item.description }}</p>
     <p class="text-xs text-muted">发布时间：{{ relativeTime(item.createTime) }}</p>
     <p class="text-xs text-muted">发布者：{{ item.user?.nickname ?? '匿名' }}</p>
-    <button class="w-full rounded bg-primary py-3 text-white" @click="contact">🔗 联系TA</button>
+    <button
+      class="flex w-full items-center justify-center gap-1.5 rounded bg-primary py-3 text-white"
+      @click="contact"
+    >
+      <Link class="size-4" aria-hidden="true" />
+      联系TA
+    </button>
     <button
       type="button"
-      class="w-full rounded border border-line bg-white py-3 text-ink"
+      class="flex w-full items-center justify-center gap-1.5 rounded border border-line bg-white py-3 text-ink"
       @click="toggleMatches"
     >
-      {{ matchesOpen ? '📂 收起匹配' : '🔍 智能匹配' }}
+      <FolderOpen v-if="matchesOpen" class="size-4" aria-hidden="true" />
+      <Search v-else class="size-4" aria-hidden="true" />
+      {{ matchesOpen ? '收起匹配' : '智能匹配' }}
     </button>
 
     <div v-if="matchesOpen" class="space-y-3">
