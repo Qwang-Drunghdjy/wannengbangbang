@@ -2,8 +2,16 @@
 
 > **文档用途**：为 AI Agent 提供完整的页面结构、交互逻辑、数据模型和组件规范，用于 Web 应用前端开发。
 > **技术栈建议**：Vue 3 + TypeScript + Tailwind CSS + Lucide 图标库（`lucide-vue-next`）。
-> **版本**：v1.3
-> **最后更新**：2026-08-19
+> **版本**：v1.4
+> **最后更新**：2026-08-20
+>
+> **v1.4 变更说明**（物品详情动作菜单 / 编辑 / 删除 / 复制链接）：
+>
+> - 新增物品详情页右上 kebab（`MoreVertical`）底部动作菜单 `ItemActionMenu`：按 `isOwner` 过滤，本人见「编辑 / 删除 / 复制链接」，非本人仅「复制链接」（见 §3.8）。
+> - **编辑**：复用 `PublishView` 作编辑页（`/item/:id/edit?type=`，类别锁定）；`UploadArea` 新增 `initialSrc` 展示已有图，AI 描述仅在换图后有 base64 时可用（见 §3.2、§3.8）。
+> - **删除**：`window.confirm` 二次确认 → `POST /{id}/delete`（仅本人，非本人 403）→ 返回（见 §3.8）。
+> - **复制链接**：`base = VITE_PUBLIC_BASE_URL || window.location.origin` 拼 `/item/{id}?type=`，与前端（临时）域名解耦；新增构建环境变量 `VITE_PUBLIC_BASE_URL`（见 §8 注意事项）。
+> - 新增模块级右槽注入 `src/composables/useTopBarRight.ts`：路由子组件可把内容注入布局 TopBar 右侧 slot（kebab 按钮即由此注入，见 §7.1）。
 >
 > **v1.3 变更说明**（待完善功能隐藏开关 + 我的发布真实计数）：
 >
@@ -45,7 +53,7 @@
 ### 1.3 导航层级（模型 A）
 
 - **一级 tab 页**：首页 `/`、消息 `/messages`、我的 `/profile`。底部导航常驻并高亮当前项，**无返回按钮**。
-- **二级页**：发布页 `/publish`、物品详情页 `/item/:id`、匹配结果页 `/match-result`。顶部含**返回按钮**（←），**不显示底部导航**。
+- **二级页**：发布页 `/publish`、物品详情页 `/item/:id`、编辑页 `/item/:id/edit`、匹配结果页 `/match-result`。顶部含**返回按钮**（←），**不显示底部导航**。
 - **登录 / 注册页**：无底部导航，顶部含返回按钮（←）。
 - **返回按钮逻辑**：优先 `router.back()`；无历史记录时兜底 `router.replace('/')`（防止从 tab 直达或深链进入后"回不去"）。
 - **当前隐藏**：「消息」一级 tab 因功能未完善暂由功能开关隐藏（`features.showMessagesTab`，见 1.5）；路由 `/messages` 仍保留，URL 直接访问可打开。
@@ -90,6 +98,10 @@ import { Search, Star } from 'lucide-vue-next'
 | 我的发布 | `ClipboardList` | 个人中心菜单 |
 | 设置 | `Settings` | 个人中心菜单 |
 | AI 生成 | `Sparkles` | 发布页「自动生成描述」 |
+| 更多操作（kebab） | `MoreVertical` | 物品详情页右上角，弹出底部动作菜单 |
+| 编辑 | `Edit` | 详情页动作菜单·编辑（仅本人） |
+| 删除 | `Trash2`（红色 `text-danger`） | 详情页动作菜单·删除（仅本人） |
+| 复制链接 | `Copy` | 详情页动作菜单·复制链接（复制后按钮临时变「已复制」） |
 
 ---
 
@@ -117,6 +129,7 @@ import { Search, Star } from 'lucide-vue-next'
 | `/register` | 注册页 | — | 否 | 否 |
 | `/publish` | 发布页 | 二级页 | 是 | 否 |
 | `/item/:id` | 物品详情页 | 二级页 | 否 | 否 |
+| `/item/:id/edit` | 编辑物品页 | 二级页 | 是 | 否 |
 | `/match-result` | 匹配结果页 | 二级页 | 否 | 否 |
 | `/messages` | 消息通知页 | 一级 tab | 否 | 是 |
 | `/profile` | 个人中心页 | 一级 tab | 是 | 是 |
@@ -175,6 +188,10 @@ import { Search, Star } from 'lucide-vue-next'
   - `seek`（寻物启事）→ 提交到 `POST /api/v1/find-items`
   - `claim`（拾物招领）→ 提交到 `POST /api/v1/lost-items`
 - **无 `type` 参数时**（如直接访问）：先显示**类型选择界面**（"寻物启事 / 拾物招领"两个卡片按钮），选定后再进入表单。
+- **编辑模式复用**：同一视图同时服务新建与**编辑**（路由 `/item/:id/edit?type=seek|claim`，见 §2）。有 `id` 即编辑态：
+  - `onMounted` 按 `?type=` 拉详情预填（字段判空）；图片经 `UploadArea` 的 `initialSrc` 展示已有图（旧图无 base64，故「自动生成描述」按钮预设·disabled 并提示"重新选图片后可使用"）。
+  - **类别绝对锁定**：不显示类型选择界面；缺 `?type=` 时仅报错+返回首页，不进表单。
+  - 提交走 `updateLostItem/updateFindItem`（`POST /{id}`），成功后 `router.replace('/item/{id}?type=')` 回详情；按钮文案「保存」（新建为「发布」）。
 
 #### 3.2.2 顶部导航栏
 
@@ -346,6 +363,31 @@ import { Search, Star } from 'lucide-vue-next'
 
 ---
 
+### 3.8 物品详情页（二级页）— kebab 底部动作菜单
+
+#### 3.8.1 顶部右上 kebab（`MoreVertical`）
+
+- **所有访客可见**，位于 `SimpleLayout` TopBar 右侧 slot，由 `useTopBarRight` 注入（见 §7.1）。
+- 点击弹**底部动作菜单** `ItemActionMenu`（`Teleport to="body"`；点遮罩 `@click.self` 或「取消」关闭）。
+- 菜单按钮按 `isOwner`（当前登录用户 == 发布者）过滤：**本人**见「编辑 / 删除 / 复制链接」，**非本人（含未登录）**仅「复制链接」；非本人看不到编辑/删除入口。
+
+#### 3.8.2 编辑（仅本人）
+
+- 点击「编辑」→ 关闭菜单 → 跳 `/item/:id/edit?type=seek|claim`（编辑页详见 §3.2）。
+
+#### 3.8.3 删除（仅本人）
+
+- `window.confirm("确定要删除该物品吗？删除后无法恢复")`；同意 → `deleteLostItem/deleteFindItem(id)`（`POST /{id}/delete`）→ `alert("已删除")` → `router.back()`（无历史兜底 `/`）。
+- 前端仅本人可见；非本人直连接口被后端 403 拦。
+
+#### 3.8.4 复制链接（所有访客）
+
+- `link = (VITE_PUBLIC_BASE_URL || window.location.origin) + '/item/' + id + '?type=' + type`。
+- `navigator.clipboard.writeText(link)`；复制后菜单按钮**临时显示「已复制」约 2s**；剪贴板不可用则降级 `alert` 展示链接。
+- `VITE_PUBLIC_BASE_URL` 为空时即前端当前部署（临时）域名；注册正式域名后在构建环境填写一次，与「复制链接域名漂移」解耦（见 §8 注意事项）。
+
+---
+
 ## 4. 帮帮柜介绍弹窗（非独立页面）
 
 ### 4.1 触发方式
@@ -381,6 +423,8 @@ import { Search, Star } from 'lucide-vue-next'
 | 首页"最新消息"列表 | — | 分别请求 `GET /api/v1/lost-items?page=0&size=6&sort=createTime,desc` 与 `GET /api/v1/find-items?page=0&size=6&sort=createTime,desc`，前端合并取前 6 | `lost_item` + `find_item` | 拾物 + 寻物混合 |
 | "全部消息"页列表 | — | 按 tab：寻物 `GET /api/v1/find-items` / 拾物 `GET /api/v1/lost-items`，支持 `?page=&size=&sort=&mine=` | 按 tab 选择 | `mine=true` 需登录，未登录/无效 token → HTTP 401 |
 | 物品详情 | — | `GET /api/v1/lost-items/{id}` 或 `GET /api/v1/find-items/{id}` | 按 type 选择 | — |
+| 编辑物品 | — | `POST /api/v1/lost-items/{id}` 或 `POST /api/v1/find-items/{id}` | 按 type 选择 | 仅本人，非本人 403 |
+| 删除物品 | — | `POST /api/v1/lost-items/{id}/delete` 或 `POST /api/v1/find-items/{id}/delete` | 按 type 选择 | 仅本人，非本人 403 |
 | 智能匹配（寻物→拾物） | — | `GET /api/v1/find-items/{id}/matches?limit=3` | — | `data = [{ item, score }]`，`item` 为拾物 LostItem |
 | 智能匹配（拾物→寻物） | — | `GET /api/v1/lost-items/{id}/matches?limit=3` | — | `data = [{ item, score }]`，`item` 为寻物 FindItem |
 | 注册 / 登录 | — | `POST /api/v1/auth/register` / `POST /api/v1/auth/login` | `user` | 返回 Bearer token |
@@ -481,6 +525,8 @@ interface LoginResponse {
 - `UploadArea`（单图上传组件）
 - `MatchCard`（匹配结果卡片，分大小两种尺寸）
 - `MessageItem`（消息列表项）
+- `ItemActionMenu`（底部动作菜单：编辑 / 删除 / 复制链接；`isOwner` 过滤，复制后按钮临时显示「已复制」）
+- `useTopBarRight`（composable，模块级右槽注入 `src/composables/useTopBarRight.ts`：供路由子组件向布局 TopBar 右侧 slot 注入内容，详情页 kebab 按钮即由它注入）
 
 ### 7.2 页面级组件
 
@@ -503,8 +549,10 @@ interface LoginResponse {
 3. **表单验证**：提交前校验必填字段，给出提示；联系方式非必填（预填手机号）；`claim` 类型图片必填。
 4. **匹配度显示**：后端 `score` 为 0.0 ~ 1.0，展示时 ×100 取整为百分比；颜色根据数值变化（>80% 绿色，60-80% 橙色，<60% 灰色）。
 5. **时间显示**：使用 `dayjs` 或 `date-fns` 将 `createTime` 转换为相对时间（如 "2小时前"）。
-6. **弹窗**：帮帮柜弹窗为模态框，点击遮罩或"我知道了"关闭。
+6. **弹窗**：帮帮柜弹窗为模态框，点击遮罩或"我知道了"关闭；详情页动作菜单为底部弹出，点遮罩或「取消」关闭。
 7. **认证**：所有写操作（POST）统一携带 `Authorization: Bearer <token>`；401 统一处理为跳转登录（见 6.2）。
+8. **「写操作一律 POST 约定」**：编辑 `POST /{id}`、删除 `POST /{id}/delete`，均需 token、仅发布者本人、非本人 403（与 `/claim` 一致，见 AGENTS.md API 表）。
+9. **「复制链接」公共域名**：构建环境设 `VITE_PUBLIC_BASE_URL`（`.env.production`，可留空）。空则回退 `window.location.origin`（前端部署域，含临时域名）；注册正式域名后填一次即与域名漂移解耦。复制出的绝对链接在临时域名轮换后会失效，勿写入长期存储 / 二维码。
 
 ---
 
@@ -530,6 +578,10 @@ GET  /api/v1/lost-items?mine=true&page=0&size=10&sort=createTime,desc
 GET  /api/v1/lost-items/{id}
 // 发布拾物（需登录）
 POST /api/v1/lost-items         { title, description?, location, contact?, imageUrl }
+// 编辑拾物（需登录，仅本人，非本人 403）
+POST /api/v1/lost-items/{id}    { title, description?, location, contact?, imageUrl }
+// 删除拾物（需登录，仅本人，非本人 403）
+POST /api/v1/lost-items/{id}/delete
 
 // ── 寻物启事（find_item，图片可选）──
 // 寻物列表（公开）：首页"最新消息"区同样按时间倒序取 6 条
@@ -540,6 +592,10 @@ GET  /api/v1/find-items?mine=true&page=0&size=10&sort=createTime,desc
 GET  /api/v1/find-items/{id}
 // 发布寻物（需登录）
 POST /api/v1/find-items         { title, description?, location, contact?, imageUrl }
+// 编辑寻物（需登录，仅本人，非本人 403）
+POST /api/v1/find-items/{id}    { title, description?, location, contact?, imageUrl }
+// 删除寻物（需登录，仅本人，非本人 403）
+POST /api/v1/find-items/{id}/delete
 // 寻物启事的智能匹配（公开）：data = [{ item: {...}, score: 0.0~1.0 }]，item 为拾物 LostItem
 GET  /api/v1/find-items/{id}/matches?limit=3
 // 拾物消息的智能匹配（公开）：data = [{ item: {...}, score: 0.0~1.0 }]，item 为寻物 FindItem

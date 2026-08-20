@@ -30,6 +30,7 @@
 8. **本机 MySQL57 服务可能未启动且 root 密码非默认 `root`**：本地冒烟先 `net start MySQL57`，启动后端前设置 `MYSQL_PASSWORD=<真实密码>`（向项目所有者确认，**勿写进文档/代码**）；应用启动需数据库 `wannengbangbang` 已存在
 9. **Lucide SVG 图标不吃 `text-*` 字号类**：emoji 用 `text-2xl` 等控制大小，换成 `lucide-vue-next` 组件后必须用 Tailwind `size-*` 设宽高（`text-*` 只影响 `currentColor` 颜色）；emoji→图标尺寸对照（`text-2xl`→`size-6` 等）见 docs/frontend-development.md §1.4
 10. **Spring Data 分页 `size=0` = 不限量**：传 `size=0` 会返回**全表**（不是 0 条），切勿用其"省流量"；取总数用 `size=1` + `page.totalElements`（前端「我的发布」计数即此模式，见 docs/frontend-development.md §3.5.2）
+11. **「复制链接」域名与前端解耦**：链接 = `VITE_PUBLIC_BASE_URL || window.location.origin` + `/item/{id}?type=`。未配 `VITE_PUBLIC_BASE_URL` 时用的是**前端部署域（含临时域名）**，域名轮换后已复制的旧链接失效（属预期）；注册正式域名后在 `.env.production` 填一次即可，勿把复制出的链接写入长期存储/二维码
 
 ## 3. 本地开发及验证流程
 
@@ -53,6 +54,14 @@ curl -X POST :8080/api/v1/lost-items -H "Authorization: Bearer $TOKEN" \
 curl -X POST :8080/api/v1/ai/describe -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"imageBase64":"<压缩后的图片 base64>","category":"seek"}'
+
+# 5. 编辑拾物（需登录；非本人返回 403）
+curl -X POST :8080/api/v1/lost-items/1 -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"黑色钱包(已改)","description":"在图书馆捡到","location":"图书附2楼","contact":"13800001111","imageUrl":"https://..."}'
+
+# 6. 删除拾物（需登录；非本人返回 403）
+curl -X POST :8080/api/v1/lost-items/1/delete -H "Authorization: Bearer $TOKEN"
 ```
 
 日志：Spring Boot 默认输出到控制台（application.yml 未配置文件日志）。

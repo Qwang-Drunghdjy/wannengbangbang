@@ -1,6 +1,8 @@
 # 数据模型 - 万能帮帮
 
 > 本文档是 `AGENTS.md` 的补充，包含完整的数据库表字段定义。
+>
+> 补充：`lost_item` / `find_item` **均支持编辑与删除**（`POST /{id}` 编辑、`POST /{id}/delete` 删除，均仅发布者本人、非本人 403），不改变表结构；端点见 AGENTS.md API 表。
 
 ## 用户表 (`user`)
 

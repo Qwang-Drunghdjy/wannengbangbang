@@ -62,7 +62,16 @@ src/main/resources/application.yml  # 数据源 & JPA & JWT & glm 配置
 
 ## 🖥️ 前端架构
 
-Vue 3 + TS + Tailwind + Pinia + vue-router；`api/` 按域分文件（auth/items/ai），统一请求封装解包 `Result<T>`、自动带 token、401 跳登录（`request.ts`）。**图标统一用 Lucide（`lucide-vue-next`），禁止 Emoji 充当图标**（全站映射见 [docs/frontend-development.md](docs/frontend-development.md) §1.4）。发布页含 `UploadArea`（canvas 压缩 → 纯 base64）+「自动生成描述」按钮。**「已实现但暂不显示」的功能由 `config/features.ts` 集中开关控制**（首页学校标识 / 消息 Tab / 我的匹配·信用评分，改 `true` 即恢复显示，见 [docs/frontend-development.md](docs/frontend-development.md) §1.5）。完整规范见 [docs/frontend-development.md](docs/frontend-development.md)（v1.3）。
+**技术栈**：Vue 3 + TS + Tailwind（移动端优先，max-w 480 居中）+ Pinia + vue-router。
+**请求层**：`api/` 按域分文件（auth / items / ai）；`request.ts` 统一解包 `Result<T>`、自动带 token、401 跳登录。
+**图标**：一律用 **Lucide**（`lucide-vue-next`），**禁止 Emoji**；SVG 用 Tailwind `size-*`（不吃 `text-*`），装饰性图标加 `aria-hidden`（映射见 [docs/frontend-development.md](docs/frontend-development.md) §1.4）。
+
+- **发布页**：`UploadArea`（canvas 压缩 → 纯 base64）+「自动生成描述」；**复用为编辑页**（`/item/:id/edit`，`?type=` 锁定类别，类别不可切）。
+- **物品详情页**：右上 kebab（`MoreVertical`）弹底部动作菜单 `ItemActionMenu` —— **编辑 / 删除（仅本人） / 复制链接（所有访客）**；编辑 `POST /{id}`、删除 `POST /{id}/delete`（仅本人，非本人 403）；kebab 经 `src/composables/useTopBarRight.ts` 注入布局 TopBar 右侧 slot。
+- **「复制链接」**：`base = VITE_PUBLIC_BASE_URL || window.location.origin` 拼 `/item/{id}?type=`，与前端（临时）域名解耦（生产配正式域名后不再漂移）。
+- **「已实现但暂不显示」功能**：由 `config/features.ts` 集中开关控制（首页学校标识 / 消息 Tab / 我的匹配·信用评分），改 `true` 即恢复，**禁止删除隐藏代码**（见 [docs/frontend-development.md](docs/frontend-development.md) §1.5）。
+
+完整规范见 [docs/frontend-development.md](docs/frontend-development.md)（v1.4）。
 
 ## 🗄️ 核心数据模型
 
@@ -71,7 +80,7 @@ Vue 3 + TS + Tailwind + Pinia + vue-router；`api/` 按域分文件（auth/items
 ## 🔌 API 设计规范
 
 - 统一 `Result<T>`：`{ code, message, data }`；`GlobalExceptionHandler` 统一转 `Result.error(code, msg)`（500 业务 / 400 校验 / 401 未登录 / 403 越权 / 429 限流）
-- 权限：**GET 公开，POST 需登录**（Bearer token），`/api/v1/auth` 公开；分页用 `Pageable`；物品认领状态仅发布者本人可改（POST `/claim`，非本人返回 403）
+- 权限：**GET 公开，POST 需登录**（Bearer token），`/api/v1/auth` 公开；分页用 `Pageable`；物品的**认领状态 / 编辑 / 删除仅发布者本人**可操作（`POST /claim`、`/{id}`、`/{id}/delete`，非本人返回 403）
 
 | 方法 | 路径 | 认证 | 说明 |
 | ------ | ------ | ------ | ------ |
@@ -81,10 +90,14 @@ Vue 3 + TS + Tailwind + Pinia + vue-router；`api/` 按域分文件（auth/items
 | `GET` | `/api/v1/lost-items` | ❌（`mine=true` 需登录） | 列表 `?title=&page=&size=&sort=&mine=` |
 | `GET` | `/api/v1/lost-items/{id}` | ❌ | 详情 |
 | `POST` | `/api/v1/lost-items/{id}/claim` | ✅ | 更新拾物认领状态（仅发布者本人，非本人 403）`{ claimed }` |
+| `POST` | `/api/v1/lost-items/{id}` | ✅ | 编辑拾物（仅发布者本人，非本人 403）`{ title, description?, location?, contact?, imageUrl }` |
+| `POST` | `/api/v1/lost-items/{id}/delete` | ✅ | 删除拾物（仅发布者本人，非本人 403） |
 | `POST` | `/api/v1/find-items` | ✅ | 发布寻物 |
 | `GET` | `/api/v1/find-items` | ❌（`mine=true` 需登录） | 列表 |
 | `GET` | `/api/v1/find-items/{id}` | ❌ | 详情 |
 | `POST` | `/api/v1/find-items/{id}/claim` | ✅ | 更新寻物认领状态（仅发布者本人，非本人 403）`{ claimed }` |
+| `POST` | `/api/v1/find-items/{id}` | ✅ | 编辑寻物（仅发布者本人，非本人 403）`{ title, description?, location, imageUrl }` |
+| `POST` | `/api/v1/find-items/{id}/delete` | ✅ | 删除寻物（仅发布者本人，非本人 403） |
 | `GET` | `/api/v1/find-items/{id}/matches?limit=3` | ❌ | 智能匹配（寻物 → 拾物） |
 | `GET` | `/api/v1/lost-items/{id}/matches?limit=3` | ❌ | 智能匹配（拾物 → 寻物） |
 | `POST` | `/api/v1/ai/describe` | ✅ | AI 生成描述 `{ imageBase64, category? }` → `{ title, description }`（5 次/分钟） |
@@ -118,10 +131,13 @@ Vue 3 + TS + Tailwind + Pinia + vue-router；`api/` 按域分文件（auth/items
 | `AGENTS.md` | 项目心智模型 + 全局约定（本文档） |
 | `docs/development.md` | 本机工具链、部署地址、踩坑记录、curl 冒烟模板 |
 | `docs/data-model.md` | 数据库表字段定义 |
-| `docs/frontend-development.md` | 前端开发规范 v1.3（页面 / 交互 / 数据模型 / 组件 / 功能开关） |
+| `docs/frontend-development.md` | 前端开发规范 v1.4（页面 / 交互 / 数据模型 / 组件 / 功能开关） |
 | `plans/ai-describe.md` | 后端 AI 自动生成描述计划（已实现） |
 | `plans/ai-describe-frontend.md` | 前端「自动生成描述」计划（已实现） |
 | `plans/hide-pending-features.md` | 隐藏待完善功能（features.ts 开关，已实现） |
 | `plans/fix-publish-count.md` | 完善「我的发布」总数显示（已实现） |
 | `plans/claimed-item-toggle.md` | 物品详情「已认领」开关 + 已认领不参与匹配（已实现） |
+| `plans/item-detail-menu.md` | 物品详情右上 kebab 底部菜单（菜单结构，已实现） |
+| `plans/item-detail-edit.md` | 物品编辑功能（后端 POST `/{id}` + 前端复用 PublishView，已实现） |
+| `plans/item-detail-delete-copy.md` | 物品「删除 / 复制链接」功能（已实现） |
 | `plans/lost-item.md` / `find-item.md` / `match.md` / `frontend.md` | 历史开发计划与记录 |
