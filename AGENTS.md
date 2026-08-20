@@ -35,10 +35,10 @@ plans/          # 分步开发计划与记录
 ```text
 backend/src/main/java/com/uang/backend/
     config/     # JwtUtil + AuthInterceptor + WebMvcConfig（认证）
-    controller/ # REST 控制器 + GlobalExceptionHandler（400/401/429/500）
-    dto/        # Result<T>、MatchResult、Login/RegisterRequest、DescribeImage* 等
+    controller/ # REST 控制器 + GlobalExceptionHandler（400/401/403/429/500）
+    dto/        # Result<T>、MatchResult、ClaimRequest、Login/RegisterRequest、DescribeImage* 等
     entity/     # User / LostItem / FindItem
-    exception/  # UnauthorizedException / RateLimitException
+    exception/  # UnauthorizedException / ForbiddenException / RateLimitException
     repository/ # Spring Data JPA 仓库
     service/    # User / LostItem / FindItem / Matching / Ai / RateLimit Service
     client/     # GlmClient（GLM-4V-Flash 薄封装，换模型只改此处）
@@ -48,7 +48,7 @@ src/main/resources/application.yml  # 数据源 & JPA & JWT & glm 配置
 核心子系统（实现细节见对应 plans/ 文档）：
 
 - **认证**：JWT（jjwt 0.12.6，7 天）+ BCrypt + HandlerInterceptor；拦截 `/api/v1/**` 的 POST（需 token），GET 与 `/api/v1/auth/**` 公开，失败 HTTP 401
-- **匹配**：`0.6×Jaccard(title) + 0.3×Jaccard(description) + 0.1×Jaccard(location)`（HanLP 分词，实时无缓存）
+- **匹配**：`0.6×Jaccard(title) + 0.3×Jaccard(description) + 0.1×Jaccard(location)`（HanLP 分词，实时无缓存）；**已认领物品被排除，不参与匹配**
 - **AI 描述生成**：前端压缩图 → `POST /api/v1/ai/describe`（需登录，每用户 5 次/分钟，超限 429）→ GLM-4V-Flash 生成 `{ title, description }` 回填表单；seek/claim 差异化 prompt
 
 ### 前后端术语映射（重要 ⚠️）
@@ -70,8 +70,8 @@ Vue 3 + TS + Tailwind + Pinia + vue-router；`api/` 按域分文件（auth/items
 
 ## 🔌 API 设计规范
 
-- 统一 `Result<T>`：`{ code, message, data }`；`GlobalExceptionHandler` 统一转 `Result.error(code, msg)`（500 业务 / 400 校验 / 401 未登录 / 429 限流）
-- 权限：**GET 公开，POST 需登录**（Bearer token），`/api/v1/auth` 公开；分页用 `Pageable`
+- 统一 `Result<T>`：`{ code, message, data }`；`GlobalExceptionHandler` 统一转 `Result.error(code, msg)`（500 业务 / 400 校验 / 401 未登录 / 403 越权 / 429 限流）
+- 权限：**GET 公开，POST 需登录**（Bearer token），`/api/v1/auth` 公开；分页用 `Pageable`；物品认领状态仅发布者本人可改（POST `/claim`，非本人返回 403）
 
 | 方法 | 路径 | 认证 | 说明 |
 | ------ | ------ | ------ | ------ |
@@ -80,9 +80,11 @@ Vue 3 + TS + Tailwind + Pinia + vue-router；`api/` 按域分文件（auth/items
 | `POST` | `/api/v1/lost-items` | ✅ | 发布拾物（image_url 必填） |
 | `GET` | `/api/v1/lost-items` | ❌（`mine=true` 需登录） | 列表 `?title=&page=&size=&sort=&mine=` |
 | `GET` | `/api/v1/lost-items/{id}` | ❌ | 详情 |
+| `POST` | `/api/v1/lost-items/{id}/claim` | ✅ | 更新拾物认领状态（仅发布者本人，非本人 403）`{ claimed }` |
 | `POST` | `/api/v1/find-items` | ✅ | 发布寻物 |
 | `GET` | `/api/v1/find-items` | ❌（`mine=true` 需登录） | 列表 |
 | `GET` | `/api/v1/find-items/{id}` | ❌ | 详情 |
+| `POST` | `/api/v1/find-items/{id}/claim` | ✅ | 更新寻物认领状态（仅发布者本人，非本人 403）`{ claimed }` |
 | `GET` | `/api/v1/find-items/{id}/matches?limit=3` | ❌ | 智能匹配（寻物 → 拾物） |
 | `GET` | `/api/v1/lost-items/{id}/matches?limit=3` | ❌ | 智能匹配（拾物 → 寻物） |
 | `POST` | `/api/v1/ai/describe` | ✅ | AI 生成描述 `{ imageBase64, category? }` → `{ title, description }`（5 次/分钟） |
@@ -121,4 +123,5 @@ Vue 3 + TS + Tailwind + Pinia + vue-router；`api/` 按域分文件（auth/items
 | `plans/ai-describe-frontend.md` | 前端「自动生成描述」计划（已实现） |
 | `plans/hide-pending-features.md` | 隐藏待完善功能（features.ts 开关，已实现） |
 | `plans/fix-publish-count.md` | 完善「我的发布」总数显示（已实现） |
+| `plans/claimed-item-toggle.md` | 物品详情「已认领」开关 + 已认领不参与匹配（已实现） |
 | `plans/lost-item.md` / `find-item.md` / `match.md` / `frontend.md` | 历史开发计划与记录 |

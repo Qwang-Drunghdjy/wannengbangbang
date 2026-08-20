@@ -27,6 +27,7 @@
 | `image_url` | `String(500)` | ✅ | 图片 URL |
 | `create_time` | `LocalDateTime` | — | 发布时间（服务端赋值） |
 | `user_id` | `Long` | ✅ | 发布者 ID，外键关联 `user.id` |
+| `claimed` | `boolean` | — | 是否已认领（失主已取回），默认 `false`；已认领不参与匹配 |
 
 ## 寻物表 (`find_item`) — 丢失的物品
 
@@ -42,3 +43,4 @@
 | `image_url` | `String(500)` | ❌ | 图片 URL（可选） |
 | `create_time` | `LocalDateTime` | — | 发布时间（服务端赋值） |
 | `user_id` | `Long` | ✅ | 发布者 ID，外键关联 `user.id` |
+| `claimed` | `boolean` | — | 是否已认领（已找回），默认 `false`；已认领不参与匹配 |
