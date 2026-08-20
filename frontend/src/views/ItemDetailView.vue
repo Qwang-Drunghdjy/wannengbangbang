@@ -1,13 +1,22 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { fetchFindItem, fetchLostItem, fetchMatches, fetchMatchesByLostItem } from '@/api/items'
+import {
+  fetchFindItem,
+  fetchLostItem,
+  fetchMatches,
+  fetchMatchesByLostItem,
+  updateFindItemClaimed,
+  updateLostItemClaimed,
+} from '@/api/items'
 import type { MatchResult, PublishItem } from '@/api/types'
 import { FolderOpen, Link, Package, Search } from 'lucide-vue-next'
 import MatchCard from '@/components/MatchCard.vue'
+import { useAuthStore } from '@/stores/auth'
 import { relativeTime } from '@/utils/time'
 
 const route = useRoute()
+const auth = useAuthStore()
 const type = (route.query.type as string) ?? 'claim'
 const isClaim = computed(() => type === 'claim')
 
@@ -66,6 +75,38 @@ function toggleMatches() {
     loadMatches()
   }
 }
+
+// ── 已认领开关（仅发布者本人可见） ──────────────────────
+
+/** 是否为当前登录用户本人发布 */
+const isOwner = computed(() => Boolean(item.value?.user && auth.user?.id === item.value.user.id))
+/** 已认领时禁用智能匹配（决策 1b） */
+const matchesDisabled = computed(() => item.value?.claimed === true)
+const claimSaving = ref(false)
+const claimError = ref('')
+
+async function toggleClaimed() {
+  if (!item.value || claimSaving.value) return
+  const id = route.params.id as string
+  const target = !item.value.claimed
+  claimSaving.value = true
+  claimError.value = ''
+  try {
+    const updated = isClaim.value
+      ? await updateLostItemClaimed(id, target)
+      : await updateFindItemClaimed(id, target)
+    item.value.claimed = updated.claimed
+    // 标记已认领后：收起并清空已展开的匹配区
+    if (updated.claimed) {
+      matchesOpen.value = false
+      matches.value = null
+    }
+  } catch (e) {
+    claimError.value = e instanceof Error ? e.message : '操作失败'
+  } finally {
+    claimSaving.value = false
+  }
+}
 </script>
 
 <template>
@@ -79,6 +120,34 @@ function toggleMatches() {
     <p v-if="item.description" class="text-sm text-ink">{{ item.description }}</p>
     <p class="text-xs text-muted">发布时间：{{ relativeTime(item.createTime) }}</p>
     <p class="text-xs text-muted">发布者：{{ item.user?.nickname ?? '匿名' }}</p>
+    <!-- 已认领开关：仅发布者本人可见可操作 -->
+    <div
+      v-if="isOwner"
+      class="flex items-center justify-between rounded-lg border border-line bg-white px-4 py-3"
+    >
+      <div>
+        <p class="text-sm text-ink">{{ item.claimed ? '已认领' : '待认领' }}</p>
+        <p class="text-xs text-muted">
+          {{ item.claimed ? '认领后该物品将不再参与匹配' : '标记认领后该物品将不再参与匹配' }}
+        </p>
+      </div>
+      <button
+        type="button"
+        role="switch"
+        :aria-checked="item.claimed"
+        :disabled="claimSaving"
+        aria-label="切换认领状态"
+        class="relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-50"
+        :class="item.claimed ? 'bg-primary' : 'bg-slate-200'"
+        @click="toggleClaimed"
+      >
+        <span
+          class="absolute top-1 flex size-5 items-center justify-center rounded-full bg-white shadow transition-all"
+          :class="item.claimed ? 'left-6' : 'left-1'"
+        />
+      </button>
+    </div>
+    <p v-if="claimError" class="text-sm text-danger">{{ claimError }}</p>
     <button
       class="flex w-full items-center justify-center gap-1.5 rounded bg-primary py-3 text-white"
       @click="contact"
@@ -88,12 +157,13 @@ function toggleMatches() {
     </button>
     <button
       type="button"
-      class="flex w-full items-center justify-center gap-1.5 rounded border border-line bg-white py-3 text-ink"
+      :disabled="matchesDisabled"
+      class="flex w-full items-center justify-center gap-1.5 rounded border border-line bg-white py-3 text-ink disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-muted"
       @click="toggleMatches"
     >
       <FolderOpen v-if="matchesOpen" class="size-4" aria-hidden="true" />
       <Search v-else class="size-4" aria-hidden="true" />
-      {{ matchesOpen ? '收起匹配' : '智能匹配' }}
+      {{ matchesOpen ? '收起匹配' : matchesDisabled ? '该物品已认领' : '智能匹配' }}
     </button>
 
     <div v-if="matchesOpen" class="space-y-3">

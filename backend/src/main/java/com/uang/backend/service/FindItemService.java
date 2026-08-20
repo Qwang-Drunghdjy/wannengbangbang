@@ -2,6 +2,7 @@ package com.uang.backend.service;
 
 import com.uang.backend.entity.FindItem;
 import com.uang.backend.entity.User;
+import com.uang.backend.exception.ForbiddenException;
 import com.uang.backend.repository.FindItemRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -38,6 +39,23 @@ public class FindItemService {
         if (!StringUtils.hasText(item.getContact())) {
             item.setContact(user.getPhone());
         }
+        return repository.save(item);
+    }
+
+    /**
+     * 更新寻物信息的认领状态（仅发布者本人可操作）。
+     * @param id      寻物 ID
+     * @param userId  当前登录用户 ID（来自 JWT）
+     * @param claimed 目标认领状态
+     * @return 更新后的寻物实体
+     * @throws ForbiddenException 非发布者本人时抛出
+     */
+    public FindItem updateClaimed(Long id, Long userId, boolean claimed) {
+        FindItem item = findById(id);
+        if (!item.getUser().getId().equals(userId)) {
+            throw new ForbiddenException("无权修改该寻物信息的认领状态");
+        }
+        item.setClaimed(claimed);
         return repository.save(item);
     }
 

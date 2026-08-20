@@ -2,6 +2,7 @@ package com.uang.backend.controller;
 
 import com.uang.backend.config.AuthInterceptor;
 import com.uang.backend.config.JwtUtil;
+import com.uang.backend.dto.ClaimRequest;
 import com.uang.backend.dto.Result;
 import com.uang.backend.entity.LostItem;
 import com.uang.backend.exception.UnauthorizedException;
@@ -64,6 +65,22 @@ public class LostItemController {
         }
         Page<LostItem> page = service.findAll(title, userId, pageable);
         return Result.success(page);
+    }
+
+    /**
+     * 更新拾物信息的认领状态（仅发布者本人可操作，POST 已被拦截器鉴权）。
+     * POST /api/v1/lost-items/{id}/claim
+     * @param id      拾物 ID
+     * @param request 请求（从中提取拦截器注入的 userId）
+     * @param body    认领状态 {@link ClaimRequest}
+     * @return 更新后的拾物
+     */
+    @PostMapping("/{id}/claim")
+    public Result<LostItem> updateClaimed(@PathVariable Long id, HttpServletRequest request,
+                                          @RequestBody ClaimRequest body) {
+        Long userId = (Long) request.getAttribute(AuthInterceptor.USER_ID_ATTR);
+        LostItem saved = service.updateClaimed(id, userId, body.isClaimed());
+        return Result.success(saved);
     }
 
     /**

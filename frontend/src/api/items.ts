@@ -49,6 +49,16 @@ export function fetchFindItem(id: number | string): Promise<PublishItem> {
   return get<PublishItem>(`/find-items/${id}`)
 }
 
+/** 更新拾物认领状态（仅发布者本人）→ POST /api/v1/lost-items/{id}/claim */
+export function updateLostItemClaimed(id: number | string, claimed: boolean): Promise<PublishItem> {
+  return post<PublishItem>(`/lost-items/${id}/claim`, { claimed })
+}
+
+/** 更新寻物认领状态（仅发布者本人）→ POST /api/v1/find-items/{id}/claim */
+export function updateFindItemClaimed(id: number | string, claimed: boolean): Promise<PublishItem> {
+  return post<PublishItem>(`/find-items/${id}/claim`, { claimed })
+}
+
 /** 智能匹配（寻物 → 拾物） */
 export function fetchMatches(findItemId: number | string, limit = 3): Promise<MatchResult[]> {
   return get<MatchResult[]>(`/find-items/${findItemId}/matches`, { limit })

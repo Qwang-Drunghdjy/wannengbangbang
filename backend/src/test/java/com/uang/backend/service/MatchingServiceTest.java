@@ -213,6 +213,31 @@ class MatchingServiceTest {
         assertThat(results).isEmpty();
     }
 
+    @Test
+    void findMatches_shouldExcludeClaimedLostItems() {
+        FindItem fi = new FindItem();
+        fi.setId(1L);
+        fi.setTitle("黑色钱包");
+
+        LostItem claimed = new LostItem();
+        claimed.setId(1L);
+        claimed.setTitle("黑色钱包");
+        claimed.setClaimed(true);
+
+        LostItem available = new LostItem();
+        available.setId(2L);
+        available.setTitle("黑色钱包");
+
+        when(findItemService.findById(1L)).thenReturn(fi);
+        when(lostItemRepository.findAll()).thenReturn(List.of(claimed, available));
+
+        List<MatchResult<LostItem>> results = matchingService.findMatches(1L, 3);
+
+        // 已认领的拾物不应出现在候选里
+        assertThat(results).extracting(r -> r.getItem().getId()).containsExactly(2L);
+    }
+
+
     // ── findMatchesByLostItem ────────────────────────────────
 
     @Test
@@ -263,5 +288,29 @@ class MatchingServiceTest {
         List<MatchResult<FindItem>> results = matchingService.findMatchesByLostItem(1L, 3);
 
         assertThat(results).isEmpty();
+    }
+
+    @Test
+    void findMatchesByLostItem_shouldExcludeClaimedFindItems() {
+        LostItem li = new LostItem();
+        li.setId(1L);
+        li.setTitle("黑色钱包");
+
+        FindItem claimed = new FindItem();
+        claimed.setId(1L);
+        claimed.setTitle("黑色钱包");
+        claimed.setClaimed(true);
+
+        FindItem available = new FindItem();
+        available.setId(2L);
+        available.setTitle("黑色钱包");
+
+        when(lostItemService.findById(1L)).thenReturn(li);
+        when(findItemRepository.findAll()).thenReturn(List.of(claimed, available));
+
+        List<MatchResult<FindItem>> results = matchingService.findMatchesByLostItem(1L, 3);
+
+        // 已认领的寻物不应出现在候选里
+        assertThat(results).extracting(r -> r.getItem().getId()).containsExactly(2L);
     }
 }

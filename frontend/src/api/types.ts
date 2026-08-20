@@ -26,6 +26,8 @@ export interface PublishItem {
   contact?: string | null
   /** 图片 URL（单图；claim 必填、seek 可选） */
   imageUrl?: string | null
+  /** 是否已认领（后端 claimed，默认 false）；已认领物品不参与匹配 */
+  claimed?: boolean
   /** ISO 时间（后端 createTime） */
   createTime?: string | null
   /** 发布者（GET 详情/列表返回，后端嵌套 user） */

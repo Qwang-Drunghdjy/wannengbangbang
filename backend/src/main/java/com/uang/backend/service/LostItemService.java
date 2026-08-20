@@ -2,6 +2,7 @@ package com.uang.backend.service;
 
 import com.uang.backend.entity.LostItem;
 import com.uang.backend.entity.User;
+import com.uang.backend.exception.ForbiddenException;
 import com.uang.backend.repository.LostItemRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -42,9 +43,26 @@ public class LostItemService {
     }
 
     /**
-     * 根据 ID 查询失物详情
+     * 更新拾物信息的认领状态（仅发布者本人可操作）。
+     * @param id      拾物 ID
+     * @param userId  当前登录用户 ID（来自 JWT）
+     * @param claimed 目标认领状态
+     * @return 更新后的拾物实体
+     * @throws ForbiddenException 非发布者本人时抛出
+     */
+    public LostItem updateClaimed(Long id, Long userId, boolean claimed) {
+        LostItem item = findById(id);
+        if (!item.getUser().getId().equals(userId)) {
+            throw new ForbiddenException("无权修改该拾物信息的认领状态");
+        }
+        item.setClaimed(claimed);
+        return repository.save(item);
+    }
+
+    /**
+     * 根据 ID 查询拾物详情
      * @param id 主键
-     * @return 失物实体
+     * @return 拾物实体
      * @throws RuntimeException 未找到时抛出
      */
     public LostItem findById(Long id) {

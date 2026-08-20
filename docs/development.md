@@ -18,14 +18,7 @@
 
 **API 联调约定**：用 `ctx_execute`（JS `fetch`）直接打已部署后端，或 `curl.exe`；不要在会话里反复试探 bash。
 
-## 2. 部署地址（临时，测试用）
-
-- 后端（微信云托管）：`https://wannengbangbang-back-294764-10-1466165089.sh.run.tcloudbase.com`
-- 前端（EdgeOne Pages）：`https://wannengbangbang-j74p1pmq.edgeone.cool`（访问需 `eo_token`，临时）
-
-> 临时地址可能变更，部署配置以云托管控制台为准。
-
-## 3. 已踩坑记录（不要再犯）
+## 2. 已踩坑记录（不要再犯）
 
 1. **`VITE_API_BASE` 必须带 `/api/v1` 后缀**：前端 `request.ts` 的 `baseURL = VITE_API_BASE ?? '/api/v1'`，`auth.ts` 里路径是 `/auth/register`（不含前缀）。部署时若 `VITE_API_BASE` 只填域名 → 请求打到 `/auth/register`（缺前缀）→ 网关 403 / CORS 报错。正确值：`https://…sh.run.tcloudbase.com/api/v1`
 2. **后端 JSON 字段是驼峰**：发布拾物用 `imageUrl`（不是 `image_url`）；Jackson 不认蛇形
@@ -38,7 +31,7 @@
 9. **Lucide SVG 图标不吃 `text-*` 字号类**：emoji 用 `text-2xl` 等控制大小，换成 `lucide-vue-next` 组件后必须用 Tailwind `size-*` 设宽高（`text-*` 只影响 `currentColor` 颜色）；emoji→图标尺寸对照（`text-2xl`→`size-6` 等）见 docs/frontend-development.md §1.4
 10. **Spring Data 分页 `size=0` = 不限量**：传 `size=0` 会返回**全表**（不是 0 条），切勿用其"省流量"；取总数用 `size=1` + `page.totalElements`（前端「我的发布」计数即此模式，见 docs/frontend-development.md §3.5.2）
 
-## 4. 本地开发及验证流程
+## 3. 本地开发及验证流程
 
 闭环：**改代码 → `mvnw.cmd clean compile` → `mvnw.cmd spring-boot:run` → curl 验证 → `mvnw.cmd test`**
 

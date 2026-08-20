@@ -2,6 +2,7 @@ package com.uang.backend.service;
 
 import com.uang.backend.entity.LostItem;
 import com.uang.backend.entity.User;
+import com.uang.backend.exception.ForbiddenException;
 import com.uang.backend.repository.LostItemRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,7 +55,42 @@ class LostItemServiceTest {
         sampleItem.setContact("13800001111");
         sampleItem.setImageUrl("https://example.com/img.jpg");
         sampleItem.setCreateTime(LocalDateTime.now());
+        sampleItem.setUser(sampleUser);
     }
+
+    @Test
+    void updateClaimed_shouldUpdateClaimedForOwner() {
+        when(repository.findById(1L)).thenReturn(Optional.of(sampleItem));
+        when(repository.save(sampleItem)).thenReturn(sampleItem);
+
+        LostItem result = service.updateClaimed(1L, 1L, true);
+
+        assertThat(result.isClaimed()).isTrue();
+        verify(repository).save(sampleItem);
+    }
+
+    @Test
+    void updateClaimed_shouldAllowUnclaimingForOwner() {
+        sampleItem.setClaimed(true);
+        when(repository.findById(1L)).thenReturn(Optional.of(sampleItem));
+        when(repository.save(sampleItem)).thenReturn(sampleItem);
+
+        LostItem result = service.updateClaimed(1L, 1L, false);
+
+        assertThat(result.isClaimed()).isFalse();
+        verify(repository).save(sampleItem);
+    }
+
+    @Test
+    void updateClaimed_shouldThrowForbiddenWhenNotOwner() {
+        when(repository.findById(1L)).thenReturn(Optional.of(sampleItem));
+
+        assertThatThrownBy(() -> service.updateClaimed(1L, 999L, true))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessageContaining("无权");
+        verify(repository, never()).save(any(LostItem.class));
+    }
+
 
     @Test
     void create_shouldSetIdNullSetCreateTimeAndAssociateUser() {

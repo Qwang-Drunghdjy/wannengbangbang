@@ -1,6 +1,7 @@
 package com.uang.backend.controller;
 
 import com.uang.backend.dto.Result;
+import com.uang.backend.exception.ForbiddenException;
 import com.uang.backend.exception.RateLimitException;
 import com.uang.backend.exception.UnauthorizedException;
 import org.springframework.http.HttpStatus;
@@ -27,6 +28,15 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public Result<Void> handleUnauthorized(UnauthorizedException e) {
         return Result.error(401, e.getMessage());
+    }
+
+    /**
+     * 越权操作（非本人操作他人资源）：HTTP 403 + Result.error(403, message)
+     */
+    @ExceptionHandler(ForbiddenException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public Result<Void> handleForbidden(ForbiddenException e) {
+        return Result.error(403, e.getMessage());
     }
 
     /**

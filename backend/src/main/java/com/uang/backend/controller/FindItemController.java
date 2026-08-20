@@ -2,6 +2,7 @@ package com.uang.backend.controller;
 
 import com.uang.backend.config.AuthInterceptor;
 import com.uang.backend.config.JwtUtil;
+import com.uang.backend.dto.ClaimRequest;
 import com.uang.backend.dto.Result;
 import com.uang.backend.entity.FindItem;
 import com.uang.backend.exception.UnauthorizedException;
@@ -67,8 +68,24 @@ public class FindItemController {
     }
 
     /**
+     * 更新寻物信息的认领状态（仅发布者本人可操作，POST 已被拦截器鉴权）。
+     * POST /api/v1/find-items/{id}/claim
+     * @param id      寻物 ID
+     * @param request 请求（从中提取拦截器注入的 userId）
+     * @param body    认领状态 {@link ClaimRequest}
+     * @return 更新后的寻物
+     */
+    @PostMapping("/{id}/claim")
+    public Result<FindItem> updateClaimed(@PathVariable Long id, HttpServletRequest request,
+                                          @RequestBody ClaimRequest body) {
+        Long userId = (Long) request.getAttribute(AuthInterceptor.USER_ID_ATTR);
+        FindItem saved = service.updateClaimed(id, userId, body.isClaimed());
+        return Result.success(saved);
+    }
+
+    /**
      * 获取特定寻物的详细信息
-     * GET /api/v1/find-items/{id}
+     * GET /api/find-items/{id}
      * @param id 寻物ID
      * @return 寻物详情
      */

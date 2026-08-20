@@ -115,6 +115,7 @@ public class MatchingService {
         List<LostItem> allLostItems = lostItemRepository.findAll();
 
         return allLostItems.stream()
+                .filter(li -> !li.isClaimed())
                 .map(li -> new MatchResult<>(li, calculateScore(findItem, li)))
                 .sorted(Comparator.comparingDouble((MatchResult<LostItem> mr) -> mr.getScore()).reversed())
                 .limit(limit)
@@ -135,6 +136,7 @@ public class MatchingService {
         List<FindItem> allFindItems = findItemRepository.findAll();
 
         return allFindItems.stream()
+                .filter(fi -> !fi.isClaimed())
                 .map(fi -> new MatchResult<>(fi, calculateScore(fi, lostItem)))
                 .sorted(Comparator.comparingDouble((MatchResult<FindItem> mr) -> mr.getScore()).reversed())
                 .limit(limit)

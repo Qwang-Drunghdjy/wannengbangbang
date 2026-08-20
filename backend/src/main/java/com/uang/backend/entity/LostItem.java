@@ -63,4 +63,10 @@ public class LostItem {
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
+
+    /**
+     * 是否已认领（失主已取回）。已认领物品不参与智能匹配。
+     */
+    @Column(nullable = false)
+    private boolean claimed = false;
 }
