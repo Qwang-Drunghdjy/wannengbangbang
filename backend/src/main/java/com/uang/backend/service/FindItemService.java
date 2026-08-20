@@ -70,6 +70,20 @@ public class FindItemService {
     }
 
     /**
+     * 删除寻物信息（仅发布者本人可操作）。
+     * @param id      寻物 ID
+     * @param userId  当前登录用户 ID（来自 JWT）
+     * @throws ForbiddenException 非发布者本人时抛出
+     */
+    public void delete(Long id, Long userId) {
+        FindItem existing = findById(id);
+        if (!existing.getUser().getId().equals(userId)) {
+            throw new ForbiddenException("无权删除该寻物信息");
+        }
+        repository.delete(existing);
+    }
+
+    /**
      * 更新寻物信息的认领状态（仅发布者本人可操作）。
      * @param id      寻物 ID
      * @param userId  当前登录用户 ID（来自 JWT）

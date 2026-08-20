@@ -70,6 +70,20 @@ public class LostItemService {
     }
 
     /**
+     * 删除拾物信息（仅发布者本人可操作）。
+     * @param id      拾物 ID
+     * @param userId  当前登录用户 ID（来自 JWT）
+     * @throws ForbiddenException 非发布者本人时抛出
+     */
+    public void delete(Long id, Long userId) {
+        LostItem existing = findById(id);
+        if (!existing.getUser().getId().equals(userId)) {
+            throw new ForbiddenException("无权删除该拾物信息");
+        }
+        repository.delete(existing);
+    }
+
+    /**
      * 更新拾物信息的认领状态（仅发布者本人可操作）。
      * @param id      拾物 ID
      * @param userId  当前登录用户 ID（来自 JWT）

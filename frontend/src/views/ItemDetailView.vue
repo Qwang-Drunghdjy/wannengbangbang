@@ -2,6 +2,8 @@
 import { computed, defineComponent, h, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
+  deleteFindItem,
+  deleteLostItem,
   fetchFindItem,
   fetchLostItem,
   fetchMatches,
@@ -123,6 +125,39 @@ function onEdit() {
   void router.push(`/item/${route.params.id as string}/edit?type=${type}`)
 }
 
+/** 返回：优先 history.back()，无历史时兜底回首页（与 TopBar 一致） */
+function goBack() {
+  if (window.history.length > 1) router.back()
+  else router.replace('/')
+}
+
+/** 「复制链接」：方案 C，base = 配置的公共域名 || 当前前端域名（临时域名），拼详情路径 */
+async function onCopy() {
+  menuOpen.value = false
+  const publicBase = (import.meta.env.VITE_PUBLIC_BASE_URL as string | undefined)?.trim()
+  const base = publicBase || window.location.origin
+  const link = `${base}/item/${route.params.id as string}?type=${type}`
+  try {
+    await navigator.clipboard.writeText(link)
+  } catch {
+    window.alert(`链接已就绪：${link}`)
+  }
+}
+
+/** 「删除」（仅本人）：confirm 二次确认 → 调删除接口 → 提示 → 返回 */
+async function onDelete() {
+  menuOpen.value = false
+  if (!window.confirm('确定要删除该物品吗？删除后无法恢复')) return
+  try {
+    if (isClaim.value) await deleteLostItem(route.params.id as string)
+    else await deleteFindItem(route.params.id as string)
+    window.alert('已删除')
+    goBack()
+  } catch (e) {
+    window.alert(e instanceof Error ? `删除失败：${e.message}` : '删除失败')
+  }
+}
+
 /** 注入到布局 TopBar 右侧 slot 的 kebab 按钮：点击打开底部菜单 */
 const KebabButton = defineComponent({
   name: 'KebabButton',
@@ -227,7 +262,14 @@ onUnmounted(() => {
     </div>
 
     <!-- 顶部 kebab 弹出的底部动作菜单（仅菜单；按钮功能后续实现） -->
-    <ItemActionMenu :open="menuOpen" :is-owner="isOwner" @close="menuOpen = false" @edit="onEdit" />
+    <ItemActionMenu
+      :open="menuOpen"
+      :is-owner="isOwner"
+      @close="menuOpen = false"
+      @edit="onEdit"
+      @delete="onDelete"
+      @copy="onCopy"
+    />
   </div>
   <p v-else-if="error" class="text-sm text-danger">{{ error }}</p>
   <p v-else class="text-sm text-muted">加载中...</p>

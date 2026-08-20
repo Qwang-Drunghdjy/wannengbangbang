@@ -29,6 +29,16 @@ export function updateFindItem(id: number | string, payload: PublishPayload): Pr
   return post<PublishItem>(`/find-items/${id}`, payload)
 }
 
+/** 删除拾物招领（仅发布者本人）→ POST /api/v1/lost-items/{id}/delete（需登录，非本人 403） */
+export function deleteLostItem(id: number | string): Promise<null> {
+  return post<null>(`/lost-items/${id}/delete`)
+}
+
+/** 删除寻物启事（仅发布者本人）→ POST /api/v1/find-items/{id}/delete（需登录，非本人 403） */
+export function deleteFindItem(id: number | string): Promise<null> {
+  return post<null>(`/find-items/${id}/delete`)
+}
+
 /** 分页查询参数（page / size / title 模糊搜索 / sort 排序，如 'createTime,desc' / mine 仅查看我的，需登录） */
 export interface PageQuery extends Record<string, unknown> {
   page?: number

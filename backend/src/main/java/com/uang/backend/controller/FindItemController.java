@@ -100,6 +100,20 @@ public class FindItemController {
     }
 
     /**
+     * 删除寻物信息（仅发布者本人可操作，POST 已被拦截器鉴权，非本人 403）。
+     * POST /api/v1/find-items/{id}/delete
+     * @param id      寻物 ID
+     * @param request 请求（从中提取拦截器注入的 userId）
+     * @return 删除结果（无数据体）
+     */
+    @PostMapping("/{id}/delete")
+    public Result<Void> delete(@PathVariable Long id, HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute(AuthInterceptor.USER_ID_ATTR);
+        service.delete(id, userId);
+        return Result.success(null);
+    }
+
+    /**
      * 获取特定寻物的详细信息
      * GET /api/find-items/{id}
      * @param id 寻物ID
