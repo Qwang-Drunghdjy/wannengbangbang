@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, defineComponent, h, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import {
   fetchFindItem,
@@ -10,8 +10,11 @@ import {
   updateLostItemClaimed,
 } from '@/api/items'
 import type { MatchResult, PublishItem } from '@/api/types'
+import { MoreVertical } from 'lucide-vue-next'
 import { FolderOpen, Link, Package, Search } from 'lucide-vue-next'
 import MatchCard from '@/components/MatchCard.vue'
+import ItemActionMenu from '@/components/ItemActionMenu.vue'
+import { useTopBarRight } from '@/composables/useTopBarRight'
 import { useAuthStore } from '@/stores/auth'
 import { relativeTime } from '@/utils/time'
 
@@ -107,6 +110,38 @@ async function toggleClaimed() {
     claimSaving.value = false
   }
 }
+
+// ── 顶部 kebab 动作菜单（仅菜单制作，按钮功能后续再实现） ───────
+
+const menuOpen = ref(false)
+const { topBarRight } = useTopBarRight()
+
+/** 注入到布局 TopBar 右侧 slot 的 kebab 按钮：点击打开底部菜单 */
+const KebabButton = defineComponent({
+  name: 'KebabButton',
+  render() {
+    return h(
+      'button',
+      {
+        type: 'button',
+        class: 'flex h-full w-12 shrink-0 items-center justify-center text-ink',
+        'aria-label': '更多操作',
+        onClick: () => {
+          menuOpen.value = true
+        },
+      },
+      [h(MoreVertical, { class: 'size-5', 'aria-hidden': 'true' })],
+    )
+  },
+})
+
+onMounted(() => {
+  topBarRight.value = KebabButton
+})
+onUnmounted(() => {
+  // 当前仅详情页注入 topBarRight，离开时清空避免残留
+  topBarRight.value = null
+})
 </script>
 
 <template>
@@ -183,6 +218,9 @@ async function toggleClaimed() {
         </router-link>
       </template>
     </div>
+
+    <!-- 顶部 kebab 弹出的底部动作菜单（仅菜单；按钮功能后续实现） -->
+    <ItemActionMenu :open="menuOpen" :is-owner="isOwner" @close="menuOpen = false" />
   </div>
   <p v-else-if="error" class="text-sm text-danger">{{ error }}</p>
   <p v-else class="text-sm text-muted">加载中...</p>
