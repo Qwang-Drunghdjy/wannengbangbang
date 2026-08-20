@@ -68,6 +68,22 @@ public class LostItemController {
     }
 
     /**
+     * 更新认领状态后可编辑字段的更新（仅发布者本人可操作，POST 已被拦截器鉴权，非本人 403）。
+     * POST /api/v1/lost-items/{id}
+     * @param id      拾物 ID
+     * @param request 请求（从中提取拦截器注入的 userId）
+     * @param item    编辑后的字段（JSON body）
+     * @return 更新后的拾物
+     */
+    @PostMapping("/{id}")
+    public Result<LostItem> update(@PathVariable Long id, HttpServletRequest request,
+                                   @RequestBody LostItem item) {
+        Long userId = (Long) request.getAttribute(AuthInterceptor.USER_ID_ATTR);
+        LostItem saved = service.update(id, userId, item);
+        return Result.success(saved);
+    }
+
+    /**
      * 更新拾物信息的认领状态（仅发布者本人可操作，POST 已被拦截器鉴权）。
      * POST /api/v1/lost-items/{id}/claim
      * @param id      拾物 ID

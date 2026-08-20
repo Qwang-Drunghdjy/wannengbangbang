@@ -5,13 +5,15 @@ import { Copy, Edit, Trash2 } from 'lucide-vue-next'
 /** 动作菜单面板是否打开（由父组件控制）；isOwner 是否发布者本人（非本人仅显示「复制链接」） */
 const props = defineProps<{ open: boolean; isOwner: boolean }>()
 
-const emit = defineEmits<{ close: [] }>()
+const emit = defineEmits<{ close: []; edit: [] }>()
 
 interface Action {
   label: string
   icon: Component
   danger?: boolean
   ariaLabel: string
+  /** 仅「编辑」需要触发动作；其余按钮本阶段不做事 */
+  type?: 'edit'
 }
 
 /** 动作按钮列表：仅本人可见「编辑 / 删除」；非本人仅「复制链接」 */
@@ -19,13 +21,18 @@ const actions = computed<Action[]>(() => {
   const base: Action[] = []
   if (props.isOwner) {
     base.push(
-      { label: '编辑', icon: Edit, ariaLabel: '编辑' },
+      { label: '编辑', icon: Edit, ariaLabel: '编辑', type: 'edit' },
       { label: '删除', icon: Trash2, ariaLabel: '删除', danger: true },
     )
   }
   base.push({ label: '复制链接', icon: Copy, ariaLabel: '复制链接' })
   return base
 })
+
+/** 只有「编辑」触发 edit 事件；其余按钮本阶段不做事 */
+function onAction(a: Action) {
+  if (a.type === 'edit') emit('edit')
+}
 </script>
 
 <template>
@@ -44,6 +51,7 @@ const actions = computed<Action[]>(() => {
             type="button"
             class="flex flex-col items-center gap-2 px-4 py-1"
             :aria-label="a.ariaLabel"
+            @click="onAction(a)"
           >
             <span class="flex size-12 items-center justify-center rounded-full bg-bg">
               <component

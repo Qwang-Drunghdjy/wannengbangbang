@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, defineComponent, h, onMounted, onUnmounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import {
   fetchFindItem,
   fetchLostItem,
@@ -19,6 +19,7 @@ import { useAuthStore } from '@/stores/auth'
 import { relativeTime } from '@/utils/time'
 
 const route = useRoute()
+const router = useRouter()
 const auth = useAuthStore()
 const type = (route.query.type as string) ?? 'claim'
 const isClaim = computed(() => type === 'claim')
@@ -115,6 +116,12 @@ async function toggleClaimed() {
 
 const menuOpen = ref(false)
 const { topBarRight } = useTopBarRight()
+
+/** 「编辑」：关闭菜单并跳转编辑页（携带当前类别，编辑页类别锁定） */
+function onEdit() {
+  menuOpen.value = false
+  void router.push(`/item/${route.params.id as string}/edit?type=${type}`)
+}
 
 /** 注入到布局 TopBar 右侧 slot 的 kebab 按钮：点击打开底部菜单 */
 const KebabButton = defineComponent({
@@ -220,7 +227,7 @@ onUnmounted(() => {
     </div>
 
     <!-- 顶部 kebab 弹出的底部动作菜单（仅菜单；按钮功能后续实现） -->
-    <ItemActionMenu :open="menuOpen" :is-owner="isOwner" @close="menuOpen = false" />
+    <ItemActionMenu :open="menuOpen" :is-owner="isOwner" @close="menuOpen = false" @edit="onEdit" />
   </div>
   <p v-else-if="error" class="text-sm text-danger">{{ error }}</p>
   <p v-else class="text-sm text-muted">加载中...</p>

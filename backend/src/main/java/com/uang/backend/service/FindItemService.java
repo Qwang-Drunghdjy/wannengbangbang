@@ -43,6 +43,33 @@ public class FindItemService {
     }
 
     /**
+     * 更新认领后可编辑字段的更新（仅发布者本人可操作）。
+     * 保留 id / createTime / user / claimed，仅覆盖 title / description / location / contact / imageUrl；
+     * contact 为空时取发布者手机号（与 create 一致）。
+     * @param id      寻物 ID
+     * @param userId  当前登录用户 ID（来自 JWT）
+     * @param item    编辑后的字段（来自请求体）
+     * @return 更新后的寻物实体
+     * @throws ForbiddenException 非发布者本人时抛出
+     */
+    public FindItem update(Long id, Long userId, FindItem item) {
+        FindItem existing = findById(id);
+        if (!existing.getUser().getId().equals(userId)) {
+            throw new ForbiddenException("无权修改该寻物信息");
+        }
+        existing.setTitle(item.getTitle());
+        existing.setDescription(item.getDescription());
+        existing.setLocation(item.getLocation());
+        existing.setImageUrl(item.getImageUrl());
+        if (StringUtils.hasText(item.getContact())) {
+            existing.setContact(item.getContact());
+        } else {
+            existing.setContact(existing.getUser().getPhone());
+        }
+        return repository.save(existing);
+    }
+
+    /**
      * 更新寻物信息的认领状态（仅发布者本人可操作）。
      * @param id      寻物 ID
      * @param userId  当前登录用户 ID（来自 JWT）

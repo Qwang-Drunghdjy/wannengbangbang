@@ -1,14 +1,23 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { createFindItem, createLostItem } from '@/api/items'
+import {
+  createFindItem,
+  createLostItem,
+  fetchFindItem,
+  fetchLostItem,
+  updateFindItem,
+  updateLostItem,
+} from '@/api/items'
 import { describeImage } from '@/api/ai'
 import type { PublishCategory } from '@/api/types'
 import { Package, Search, Sparkles } from 'lucide-vue-next'
 import UploadArea, { type UploadedImage } from '@/components/UploadArea.vue'
+import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
 const router = useRouter()
+const auth = useAuthStore()
 
 const LOCATIONS = ['图书馆', '食堂', '教学楼', '操场', '宿舍', '商场', '社区', '其他']
 
@@ -30,6 +39,46 @@ const imageBase64 = ref('')
 const generating = ref(false)
 const error = ref('')
 const submitting = ref(false)
+
+// ── 编辑模式（复用本视图，?id= 来自 /item/:id/edit） ─────────────────
+const editId = computed(() => (route.params.id as string) || '')
+const isEdit = computed(() => Boolean(editId.value))
+/** 编辑页在缺少 ?type= 时不允许出现类型选择屏 */
+const isValid = computed(() => Boolean(effectiveType.value))
+const submitLabel = computed(() => {
+  if (submitting.value) return '处理中...'
+  return isEdit.value ? '保存' : '发布'
+})
+
+/** 编辑时按 ?type= 拉取详情并预填；类别锁定不可切换 */
+onMounted(async () => {
+  if (!isEdit.value) return
+  if (!isValid.value) {
+    error.value = '缺少编辑类型信息，请从物品详情页进入编辑'
+    return
+  }
+  try {
+    const id = editId.value
+    const item = isClaim.value ? await fetchLostItem(id) : await fetchFindItem(id)
+    // 轻量属主防护：非本人不允许编辑（后端亦 403 兜底）
+    if (!auth.user || (item.user && item.user.id !== auth.user.id)) {
+      error.value = '只能编辑自己发布的信息'
+      return
+    }
+    title.value = item.title
+    description.value = item.description ?? ''
+    location.value = item.location ?? ''
+    contact.value = item.contact ?? ''
+    imageUrl.value = item.imageUrl ?? null
+    imageBase64.value = '' // 编辑旧图无 base64，AI 描述在换图后才可用
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : '加载失败'
+  }
+})
+
+function goHome() {
+  void router.replace('/')
+}
 
 /** 图片变化：Q2 规则——重新选图清空 description（保留 title）；删除图同时清空 description */
 function onImageChange(value: UploadedImage | null) {
@@ -90,7 +139,13 @@ async function onSubmit() {
       contact: contact.value || undefined,
       imageUrl: imageUrl.value ?? undefined,
     }
-    if (isClaim.value) {
+    if (isEdit.value) {
+      // 编辑：POST /{id}（仅本人），成功后回详情页
+      if (isClaim.value) await updateLostItem(editId.value, payload)
+      else await updateFindItem(editId.value, payload)
+      window.alert('保存成功')
+      await router.replace(`/item/${editId.value}?type=${effectiveType.value}`)
+    } else if (isClaim.value) {
       // 拾物招领 → POST /lost-items，成功回首页
       await createLostItem(payload)
       window.alert('发布成功')
@@ -110,8 +165,20 @@ async function onSubmit() {
 
 <template>
   <div>
-    <!-- 无 type 参数：先选发布类型（规范 3.2.1） -->
-    <div v-if="!effectiveType" class="space-y-3">
+    <!-- 编辑模式缺少 ?type=：报错 + 返回，不显示类型选择屏 -->
+    <div v-if="isEdit && !effectiveType" class="space-y-3">
+      <p class="text-sm text-danger">{{ error || '缺少编辑类型信息，请从物品详情页进入编辑' }}</p>
+      <button
+        type="button"
+        class="h-12 w-full rounded border border-line bg-white text-ink"
+        @click="goHome"
+      >
+        返回首页
+      </button>
+    </div>
+
+    <!-- 新建且无 type 参数：先选发布类型（规范 3.2.1） -->
+    <div v-else-if="!effectiveType" class="space-y-3">
       <button
         type="button"
         class="flex w-full flex-col items-center gap-1 rounded-lg border-2 border-line bg-white py-5"
@@ -133,7 +200,11 @@ async function onSubmit() {
     </div>
 
     <form v-else class="space-y-4" @submit.prevent="onSubmit">
-      <UploadArea :required="isClaim" @change="onImageChange" />
+      <UploadArea
+        :required="isClaim"
+        :initial-src="imageUrl ?? undefined"
+        @change="onImageChange"
+      />
 
       <input
         v-model="title"
@@ -144,14 +215,17 @@ async function onSubmit() {
       <div v-if="imageUrl" class="flex items-center gap-2">
         <button
           type="button"
-          :disabled="generating"
+          :disabled="!imageBase64 || generating"
           class="flex h-9 items-center gap-1 rounded-lg border border-primary/30 bg-primary/5 px-3 text-sm text-primary transition-colors disabled:cursor-not-allowed disabled:opacity-60"
           @click="onAutoDescribe"
         >
           <Sparkles v-if="!generating" class="size-4" aria-hidden="true" />
           {{ generating ? '生成中...' : '自动生成描述' }}
         </button>
-        <span class="text-xs text-muted">识别图片生成关键词，便于匹配</span>
+        <span v-if="!imageBase64 && !generating" class="text-xs text-muted">
+          重新上传图片后可使用
+        </span>
+        <span v-else class="text-xs text-muted">识别图片生成关键词，便于匹配</span>
       </div>
       <textarea
         v-model="description"
@@ -179,7 +253,7 @@ async function onSubmit() {
         :disabled="submitting"
         class="h-12 w-full rounded bg-primary text-white disabled:opacity-60"
       >
-        {{ submitting ? '提交中...' : '发布' }}
+        {{ submitLabel }}
       </button>
     </form>
   </div>

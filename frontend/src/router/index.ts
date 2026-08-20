@@ -56,6 +56,14 @@ const router = createRouter({
       ],
     },
     {
+      path: '/item/:id/edit',
+      component: SimpleLayout,
+      meta: { title: '编辑信息', requiresAuth: true },
+      children: [
+        { path: '', name: 'item-edit', component: () => import('@/views/PublishView.vue') },
+      ],
+    },
+    {
       path: '/all-messages',
       component: SimpleLayout,
       meta: { title: '全部消息' },

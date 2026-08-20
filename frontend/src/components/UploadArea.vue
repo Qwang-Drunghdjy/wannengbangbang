@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { Camera } from 'lucide-vue-next'
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 
-const props = withDefaults(defineProps<{ required?: boolean }>(), { required: false })
+const props = withDefaults(defineProps<{ required?: boolean; initialSrc?: string }>(), {
+  required: false,
+  initialSrc: '',
+})
 
 /** 上传结果：previewUrl 用于本地预览；base64 为压缩后的纯 base64（供 AI 生成描述） */
 export interface UploadedImage {
@@ -15,6 +18,13 @@ const emit = defineEmits<{ change: [value: UploadedImage | null] }>()
 const fileUrl = ref<string | null>(null)
 const fileName = ref<string | null>(null)
 const processing = ref(false)
+
+/** 编辑模式：mounted 时若提供 initialSrc，则展示已有图（不触发 change；fileName 保持空） */
+onMounted(() => {
+  if (props.initialSrc) {
+    fileUrl.value = props.initialSrc
+  }
+})
 
 /** 解码图片（Image + objectURL 方案，兼容性最好） */
 function loadImage(src: string): Promise<HTMLImageElement> {
